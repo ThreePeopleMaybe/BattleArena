@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/items/">
+    <File Path="global.json" />
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="BattleArena.Api\BattleArena.Api.csproj" />
+  <Project Path="BattleArena.DbManager\BattleArena.DbManager.csproj" />
+  <Project Path="BattleArena.Db\BattleArena.Db.csproj" />
+  <Project Path="BattleArena.ServiceDefaults\BattleArena.ServiceDefaults.csproj" />
+  <Project Path="BattleArena.AppHost\BattleArena.AppHost.csproj" />
+</Solution>
