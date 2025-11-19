@@ -20,9 +20,12 @@ var dbManager = builder.AddProject<BattleArena_DbManager>("battlearena-dbmanager
     .WithHttpHealthCheck("/health")
     .WithHttpCommand("/reset-db", "Reset Database", commandOptions: new HttpCommandOptions { IconName = "DatabaseLightning" });
 
-builder.AddProject<BattleArena_Api>("api")
+builder.AddProject<BattleArena_Api>("battlearena-api")
+    .WithReference(db)
+    .WaitFor(dbManager)
+    .WithExternalHttpEndpoints()
     .WithUrlForEndpoint("https", url => url.DisplayText = "Battle Arena API (HTTPS)")
     .WithUrlForEndpoint("http", url => url.DisplayText = "Battle Arena API (HTTP)")
-    .WaitFor(dbManager);
+    .WithHttpHealthCheck("/health");
 
 builder.Build().Run();

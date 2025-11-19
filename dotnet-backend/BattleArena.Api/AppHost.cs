@@ -4,7 +4,7 @@ using BattleArena.Db;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddNpgsqlDbContext<BattleArenaDbContext>("battlearena");
+builder.AddNpgsqlDbContext<BattleArenaDbContext>("battlearena-db");
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
