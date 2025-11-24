@@ -11,5 +11,5 @@ public class Team : AuditBase
     [Column("name", TypeName = "varchar(255)")]
     public required string Name { get; set; }
 
-    public ICollection<User> Players { get; } = new List<User>();
+    public ICollection<TeamPlayer> TeamPlayers { get; } = new List<TeamPlayer>();
 }

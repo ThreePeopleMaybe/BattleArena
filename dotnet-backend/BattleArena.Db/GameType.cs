@@ -4,5 +4,5 @@ namespace BattleArena.Db;
 
 public enum GameType
 {
-    Quiz
+    TeamQuiz
 }

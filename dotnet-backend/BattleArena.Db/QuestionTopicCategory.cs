@@ -2,8 +2,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BattleArena.Db;
 
-[Table("question_topics")]
-public class QuestionTopic
+[Table("question_topic_categories")]
+public class QuestionTopicCategory
 {
     [Column("id", Order = 1)]
     public int Id { get; set; }
@@ -14,7 +14,5 @@ public class QuestionTopic
     [Column("description", TypeName = "varchar(512)")]
     public string? Description { get; set; }
 
-    [Column("question_topic_category_id")]
-    public int QuestionTopicCategoryId { get; set; }
-    public required QuestionTopicCategory Category { get; set; }
+    public  ICollection<QuestionTopic>? Topics { get; set; }
 }

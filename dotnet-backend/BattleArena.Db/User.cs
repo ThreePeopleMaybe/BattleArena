@@ -8,7 +8,7 @@ namespace BattleArena.Db;
 [Table("users")]
 public class User : AuditBase
 {
-    [Column("id")]
+    [Column("id", Order = 1)]
     public int Id { get; set; }
 
     [Column("username", TypeName = "varchar(255)")]
@@ -26,9 +26,7 @@ public class User : AuditBase
     [Column("phone_number", TypeName = "varchar(32)")]
     public string? PhoneNumber { get; set; }
 
-    public ICollection<Game> Games { get; } = new List<Game>();
+    public ICollection<TeamPlayer> TeamPlayers { get; } = new List<TeamPlayer>();
 
-    public ICollection<Team> Teams { get; } = new List<Team>();
-
-    public ICollection<Organization> Organizations { get; } = new List<Organization>();
+    public ICollection<OrganizationHost> OrganizationHosts { get; } = new List<OrganizationHost>();
 }

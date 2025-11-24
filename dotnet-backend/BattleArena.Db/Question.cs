@@ -8,21 +8,33 @@ public class Question
     [Column("id", Order = 1)]
     public int Id { get; set; }
 
-    [Column("question_type")]
-    public required QuestionType QuestionType { get; set; } =  QuestionType.Standard;
+    [Column("question_type", TypeName =  "varchar(32)")]
+    public required QuestionType Type { get; set; } =  QuestionType.Text;
 
-    [Column("topic_id")]
+    [Column("question_answer_type", TypeName =  "varchar(32)")]
+    public required QuestionAnswerType AnswerType { get; set; } =  QuestionAnswerType.Text;
+
+    [Column("question_topic_id")]
     public int TopicId { get; set; }
     public required QuestionTopic Topic { get; set; }
 
-    [Column("topic_id", TypeName = "varchar(1032)")]
-    public required string QuestionText { get; set; }
+    [Column("text", TypeName = "varchar(1032)")]
+    public required string Text { get; set; }
 
-    [Column("standard_correct_answer", TypeName = "varchar(1032)")]
-    public string? StandardCorrectAnswer { get; set; }
+    [Column("image_url", TypeName = "varchar(1032)")]
+    public required string ImageUrl { get; set; }
+
+    [Column("audio_url", TypeName = "varchar(1032)")]
+    public required string AudioUrl { get; set; }
+
+    [Column("video_url", TypeName = "varchar(1032)")]
+    public required string VideoUrl { get; set; }
+
+    [Column("correct_answer_text", TypeName = "varchar(1032)")]
+    public string? CorrectAnswerText { get; set; }
 
     [Column("points")]
     public int Points { get; set; } = 1;
 
-    public ICollection<QuestionChoice>? MultipleChoices { get; set; }
+    public ICollection<QuestionChoice>? Choices { get; set; }
 }

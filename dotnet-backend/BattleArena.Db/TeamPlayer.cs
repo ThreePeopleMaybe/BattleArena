@@ -16,6 +16,6 @@ public class TeamPlayer : AuditBase
     public int PlayerId { get; set; }
     public required User Player { get; set; }
 
-    [Column("team_role")]
+    [Column("role", TypeName = "varchar(32)")]
     public required TeamRole Role { get; set; }
 }
