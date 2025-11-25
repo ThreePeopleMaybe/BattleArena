@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Link } from 'expo-router';
 import Button from "@/components/button";
 
-export default function LoginScreen() {
+export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
