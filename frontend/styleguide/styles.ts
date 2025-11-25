@@ -10,7 +10,7 @@ const styles = StyleSheet.create({
   // ===== SCREEN LAYOUT =====
   screenContainer: {
     flex: 1,
-    backgroundColor: COLORS.lightBg,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
