@@ -1,5 +1,6 @@
 import styles from "@/styleguide/styles";
 import { Pressable, View, Text } from "react-native";
+import COLORS from "@/styleguide/colors";
 
 type Props = {
     label: string;
@@ -12,7 +13,7 @@ export default function Button({ label, onPress }: Props) {
             <Pressable style={styles.button}
             onPress={ onPress }
             >
-            <Text style={styles.label}>{label}</Text>
+            <Text style={[{ color: COLORS.white, fontWeight: '600' }]}>{label}</Text>
             </Pressable>
         </View>
     );

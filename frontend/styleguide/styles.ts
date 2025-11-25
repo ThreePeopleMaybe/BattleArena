@@ -10,7 +10,7 @@ const styles = StyleSheet.create({
   // ===== SCREEN LAYOUT =====
   screenContainer: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.lightBg,
     borderRadius: 12,
     padding: SPACING.lg,
     alignItems: 'center',
@@ -30,14 +30,44 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
 
-  // ===== BODY =====
-  body: {
+  label: {
 
   },
 
-  // ===== LABEL ====
-  label: {
-
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
+  },
+  row: {
+    flexDirection: "row", // Arrange items horizontally
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: COLORS.primary,
+    textAlign: "center",
+    marginBottom: SPACING.lg,
+  },
+  listContainer: {
+    paddingBottom: SPACING.lg,
+  },
+  itemContainer: {
+    backgroundColor: COLORS.lightBg,
+    padding: SPACING.md,
+    borderRadius: 8,
+    marginBottom: SPACING.sm,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: COLORS.darkText,
+  },
+  stats: {
+    fontSize: 14,
+    paddingLeft: SPACING.md,
+    color: COLORS.lightText
   },
 
   // ===== INPUT =====
@@ -64,11 +94,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     padding: SPACING.md
   },
-  primaryButton: {
+  gameSelectionButton: {
+    height: 50,
+    borderRadius: 8,
     backgroundColor: COLORS.primary,
-  },
-  secondaryButton: {
-    backgroundColor: COLORS.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+    padding: SPACING.md
   },
 });
 

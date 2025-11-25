@@ -2,16 +2,19 @@ import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import styles from '@/styleguide/styles'
 import COLORS from "@/styleguide/colors";
 import SPACING from "@/styleguide/spacing";
-import TYPOGRAPHY from "@/styleguide/typgraphy";
-import React, { useState } from 'react';
-import { Link } from 'expo-router';
+import React, { useState } from 'react';  
+import { useRouter } from "expo-router";
+import Button from "@/components/button";
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const router = useRouter();
+  
   return (
     <View style={styles.screenContainer}>
       <View style={styles.formContainer}>
@@ -21,11 +24,11 @@ export default function RegisterScreen() {
 
         <View style={styles.form}>
           <Text style={[styles.label, { color: COLORS.darkText, marginBottom: SPACING.sm }]}>
-            Full Name
+            Player Name
           </Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter your full name"
+            placeholder="Enter your player name"
             placeholderTextColor={COLORS.lightText}
             value={fullName}
             onChangeText={setFullName}
@@ -41,6 +44,18 @@ export default function RegisterScreen() {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+          />
+
+          <Text style={[styles.label, { color: COLORS.darkText, marginBottom: SPACING.sm }]}>
+            Phone Number
+          </Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your phone number"
+            placeholderTextColor={COLORS.lightText}
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            keyboardType="phone-pad"
           />
 
           <Text style={[styles.label, { color: COLORS.darkText, marginBottom: SPACING.sm }]}>
@@ -67,24 +82,16 @@ export default function RegisterScreen() {
             secureTextEntry
           />
 
-          <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.body, { color: COLORS.white, fontWeight: '600' }]}>
-              Create Account
-            </Text>
-          </TouchableOpacity>
+          <Button label="Register" onPress={() => alert("Register")}/>
+          
         </View>
 
-        <Link href="./loginscreen" asChild>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()}>
             
             <Text>
               Already have an account? Login
             </Text>
           </TouchableOpacity>
-        </Link>
       </View>
     </View>
   );

@@ -6,10 +6,10 @@ type Props = {
     onPress: () => void;
 }
 
-export default function Button({ label, onPress }: Props) {
+export default function GameSelectionButton({ label, onPress }: Props) {
     return (
         <View>
-            <Pressable style={styles.button}
+            <Pressable style={styles.gameSelectionButton}
             onPress={ onPress }
             >
             <Text style={styles.label}>{label}</Text>
