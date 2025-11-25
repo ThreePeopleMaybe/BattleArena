@@ -16,10 +16,10 @@ export default function Index() {
     >
       <TouchableOpacity 
           style={{position:"absolute", top: 10, right: 10}}
-          onPress={() => router.push("/screens/user/login")}>
+          onPress={() => router.push("/screens/user/LoginScreen")}>
             <FontAwesome name="user-circle" size={24} color={COLORS.primary}/>
       </TouchableOpacity>
-      <GameSelectionButton label="Trivia" onPress={()=> router.push("/screens/games/trivia/questionanswer")}/>
+      <GameSelectionButton imageName={require("@/assets/images/icons/trivia.png")} onPress={()=> router.push("/screens/games/trivia/TopicSelectionScreen")}/>
     </View>
   );
 }

@@ -86,7 +86,6 @@ const styles = StyleSheet.create({
 
   // ===== BUTTONS =====
   button: {
-    height: 50,
     borderRadius: 8,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
@@ -95,9 +94,10 @@ const styles = StyleSheet.create({
     padding: SPACING.md
   },
   gameSelectionButton: {
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
+    height: 100,
+    width: 100,
+    borderRadius: 15,
+    backgroundColor: '#DDDDDD',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.sm,

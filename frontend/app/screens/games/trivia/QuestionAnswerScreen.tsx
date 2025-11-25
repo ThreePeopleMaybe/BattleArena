@@ -3,6 +3,7 @@ import SPACING from "@/styleguide/spacing";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import styles from "@/styleguide/styles";
+
 export default function QuestionAnswerScreen() {
   // Example question and answers
   const question = {

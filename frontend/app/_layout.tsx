@@ -11,20 +11,25 @@ export default function RootLayout() {
         headerLeft: () => <></>
       }}></Stack.Screen>
 
-      <Stack.Screen name="screens/user/login" options={{
+      <Stack.Screen name="screens/user/LoginScreen" options={{
         headerTitle: "Battle Arena",
       }}></Stack.Screen>
 
-      <Stack.Screen name="screens/user/register" options={{
+      <Stack.Screen name="screens/user/RegisterScreen" options={{
         headerTitle: "Battle Arena",
       }}></Stack.Screen>
 
-      <Stack.Screen name="screens/games/leaderboard" options={{
+      <Stack.Screen name="screens/games/LeaderBoardScreen" options={{
         headerTitle: "Leader Board",
       }}></Stack.Screen>
 
-      <Stack.Screen name="screens/games/trivia/questionanswer" options={{
+      <Stack.Screen name="screens/games/trivia/QuestionAnswerScreen" options={{
         headerTitle: "Trivia",
+        headerLeft: () => <></>
+      }}></Stack.Screen>
+
+      <Stack.Screen name="screens/games/trivia/TopicSelectionScreen" options={{
+        headerTitle: "Topics",
         headerLeft: () => <></>
       }}></Stack.Screen>
     </Stack>

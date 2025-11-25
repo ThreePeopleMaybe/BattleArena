@@ -1,18 +1,18 @@
 import styles from "@/styleguide/styles";
-import { Pressable, View, Text } from "react-native";
+import { Pressable, View, Image, ImageSourcePropType } from "react-native";
 
 type Props = {
-    label: string;
     onPress: () => void;
+    imageName: ImageSourcePropType
 }
 
-export default function GameSelectionButton({ label, onPress }: Props) {
+export default function GameSelectionButton({ imageName, onPress }: Props) {
     return (
         <View>
             <Pressable style={styles.gameSelectionButton}
             onPress={ onPress }
             >
-            <Text style={styles.label}>{label}</Text>
+                <Image source={imageName} style={{ width:100, height:100, borderRadius: 15 }}/>
             </Pressable>
         </View>
     );
