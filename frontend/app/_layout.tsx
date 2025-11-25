@@ -8,7 +8,7 @@ export default function RootLayout() {
     <StatusBar barStyle={"dark-content"}/>
     <Stack>
       <Stack.Screen name="index" options={{
-        headerBackTitle: "Battle Arena",
+        headerTitle: "Battle Arena",
         headerLeft: () => <></>
       }}></Stack.Screen>
     </Stack>

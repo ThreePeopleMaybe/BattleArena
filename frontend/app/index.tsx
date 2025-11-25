@@ -1,7 +1,8 @@
-import { Link } from "expo-router";
-import { Text, View, TouchableOpacity } from "react-native";
+import { View } from "react-native";
 import styles from "@/styleguide/styles";
 import COLORS from "@/styleguide/colors";
+import Button from "@/components/button";
+import GameSelectionButton from "@/components/gameSelectionButton";
 
 export default function Index() {
   return (
@@ -12,14 +13,7 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.body, { color: COLORS.white, fontWeight: '600' }]}>
-              Jeopardy!
-            </Text>
-          </TouchableOpacity>
+      <GameSelectionButton label="Trivia" onPress={()=> alert("test")}/>
     </View>
   );
 }

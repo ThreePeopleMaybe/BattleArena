@@ -1,6 +1,6 @@
 const COLORS = {
   // Primary
-  primary: '#6200ee',
+  primary: '#3cc257ff',
   secondary: '#03dac6',
   accent: '#ff6b35',
   // Semantic

@@ -56,12 +56,13 @@ const styles = StyleSheet.create({
 
   // ===== BUTTONS =====
   button: {
-    width: '100%',
     height: 50,
     borderRadius: 8,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.sm,
+    padding: SPACING.md
   },
   primaryButton: {
     backgroundColor: COLORS.primary,
