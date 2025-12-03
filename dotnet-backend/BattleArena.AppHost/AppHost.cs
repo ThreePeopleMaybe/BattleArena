@@ -23,9 +23,9 @@ var dbManager = builder.AddProject<BattleArena_DbManager>("battlearena-dbmanager
 builder.AddProject<BattleArena_Api>("battlearena-api")
     .WithReference(db)
     .WaitFor(dbManager)
-    .WithExternalHttpEndpoints()
-    .WithUrlForEndpoint("https", url => url.DisplayText = "Battle Arena API (HTTPS)")
-    .WithUrlForEndpoint("http", url => url.DisplayText = "Battle Arena API (HTTP)")
+    //.WithExternalHttpEndpoints()
+    //.WithUrlForEndpoint("https", url => url.DisplayText = "Battle Arena API (HTTPS)")
+    //.WithUrlForEndpoint("http", url => url.DisplayText = "Battle Arena API (HTTP)")
     .WithHttpHealthCheck("/health");
 
 builder.Build().Run();
