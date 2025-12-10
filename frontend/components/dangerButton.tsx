@@ -5,12 +5,12 @@ type Props = {
   onPress: () => void;
 }
 
-export default function Button({ text, onPress }: Props) {
+export default function DangerButton({ text, onPress }: Props) {
   const { styles, theme } = useTheme();
 
   return (
     <View>
-      <Pressable style={styles.button}
+      <Pressable style={styles.dangerButton}
         onPress={onPress}
       >
         <Text style={styles.buttonText}>{text}</Text>

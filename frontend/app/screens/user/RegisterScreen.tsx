@@ -1,6 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import styles from '@/styleguide/styles'
-import COLORS from "@/styleguide/colors";
 import SPACING from "@/styleguide/spacing";
 import React, { useState } from 'react';  
 import { useRouter } from "expo-router";
@@ -16,6 +15,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   
   return (
+    {/*
     <View style={styles.screenContainer}>
       <View style={styles.formContainer}>
         <Text>
@@ -94,5 +94,6 @@ export default function RegisterScreen() {
           </TouchableOpacity>
       </View>
     </View>
+    */}
   );
 }

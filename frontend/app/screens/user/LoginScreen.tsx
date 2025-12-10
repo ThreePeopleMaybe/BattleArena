@@ -1,6 +1,5 @@
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import styles from '@/styleguide/styles'
-import COLORS from "@/styleguide/colors";
 import SPACING from "@/styleguide/spacing";
 import React, { useState } from 'react';
 import { Link } from 'expo-router';
@@ -11,6 +10,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
 
   return (
+    {/*
     <View style={styles.screenContainer}>
       <View style={styles.formContainer}>
         <Text>
@@ -54,5 +54,6 @@ export default function LoginScreen() {
         </Link>
       </View>
     </View>
+    */}
   );
 }
