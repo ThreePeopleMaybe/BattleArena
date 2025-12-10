@@ -1,158 +1,103 @@
+import { useQuery } from "@tanstack/react-query";
 import React, { useState } from "react";
-import { View, Text, FlatList, Pressable, TextInput, Alert, StyleSheet } from "react-native";
-import styles from "@/styleguide/styles";
+import { View, Text, FlatList, Pressable, ActivityIndicator } from "react-native";
+import { useRouter } from "expo-router";
 import Button from "@/components/button";
-import COLORS from "@/styleguide/colors";
+import { TopicSelection } from "@/models/topicSelection";
+import { getAvailableTopics } from "@/services/referenceDataService";
+import { useTheme } from "@/app/ThemeProvider";
 
-const TopicSelectionScreen = () => {
-  const [topics, setTopics] = useState([
-    "Science",
-    "History",
-    "Sports",
-    "Movies",
-    "Music",
-    "Music",
-    "Music",
-    "Music",
-    "Music",
-    "Music",
-    "Music",
-    "Music",
-    "Music",
-    "Music",
-  ]);
+export default function TopicSelectionScreen({}) {
+  const { styles, theme } = useTheme();
+  const [favoriteTopic, setFavoriteTopic] = useState<TopicSelection[] | null>(null);
+  const [localAvailableTopics, setAvailableTopics] = useState<TopicSelection[] | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean | null>(null);
+  const router = useRouter();
 
-  const [newTopic, setNewTopic] = useState("");
-  const [favoriteTopic, setFavoriteTopic] = useState<string | null>(null);
+  const { data: availableTopics, isLoading, isError } = useQuery({
+    queryKey: ["availableTopics"],
+    queryFn: getAvailableTopics,
+  });
 
-  const handleTopicSelect = (topic: string) => {
-    Alert.alert("Topic Selected", `You selected: ${topic}`);
+  if (isLoading) {
+    return (
+      <View style={[styles.screenContainer]}>
+        <ActivityIndicator size="large" color="#0007BFF" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={[styles.screenContainer]}>
+        <Text style={[styles.errorText]}>Failed to load topics. Please try again.</Text>
+      </View>
+    );
+  }
+
+  const handleTopicSelect = (topic: TopicSelection) => {
+    router.push({
+      pathname: "/screens/games/trivia/questionAnswerScreen",
+      params: { topicName: topic.name },
+    });
   };
 
-  const handleSuggestTopic = () => {
-    if (newTopic.trim() === "") {
-      Alert.alert("Error", "Please enter a topic name.");
-      return;
-    }
+  const filteredTopics = localAvailableTopics
+    ? showFavoritesOnly
+      ? localAvailableTopics.filter((topic) => topic.isFavorite)
+      : localAvailableTopics
+    : availableTopics;
 
-    if (topics.includes(newTopic)) {
-      Alert.alert("Topic Exists", "This topic already exists.");
-      return;
+  const handleSetFavorite = (topic: TopicSelection) => {
+    const topics = localAvailableTopics || availableTopics || [];
+    const updatedTopics = topics.map((t) =>
+      t.name === topic.name ? { ...t, isFavorite: !t.isFavorite } : t
+    );
+    if (updatedTopics) {
+      setAvailableTopics(updatedTopics);
     }
-
-    setTopics([...topics, newTopic]);
-    setNewTopic("");
-    Alert.alert("Success", "Your topic has been added.");
+    const favoriteTopics = updatedTopics?.filter((t) => t.isFavorite);
+    if(favoriteTopics){
+      setFavoriteTopic(favoriteTopics || []);
+    }
   };
 
-  const handleSetFavorite = (topic: string) => {
-    setFavoriteTopic(topic);
-    Alert.alert("Favorite Topic", `You set "${topic}" as your favorite topic.`);
+  const handleFilterFavorites = () => {
+    setShowFavoritesOnly(!showFavoritesOnly);
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.screenContainer]}>
+      <Button
+        onPress={handleFilterFavorites}
+        text={showFavoritesOnly ? "Show All Topics" : "Show Favorites"}
+      />
       <FlatList
-        data={topics}
+        data={filteredTopics}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <View style={localStyles.topicContainer}>
+          <View style={[styles.optionContainer]}>
             <Pressable
-              style={localStyles.topicButton}
+              style={[styles.optionButton]}
               onPress={() => handleTopicSelect(item)}
             >
-              <Text style={localStyles.topicText}>{item}</Text>
+              <Text style={[styles.optionText]}>{item.name}</Text>
             </Pressable>
-
             <Pressable
               style={[
-                localStyles.favoriteButton,
-                favoriteTopic === item && localStyles.favoriteButtonSelected,
+                styles.favoriteButton,
+                (favoriteTopic && favoriteTopic.find(f => f.name === item.name) !== undefined) && styles.favoriteButtonSelected,
               ]}
               onPress={() => handleSetFavorite(item)}
             >
-              <Text style={localStyles.favoriteButtonText}>
-                {favoriteTopic === item ? "❤️" : "🤍"}
+              <Text style={[styles.favoriteButtonText]}>
+                {(favoriteTopic && favoriteTopic.find(f => f.name === item.name) !== undefined) ? "♥" : "♡"}
               </Text>
             </Pressable>
           </View>
         )}
-        contentContainerStyle={localStyles.flatListContent}
       />
-
-      <View style={localStyles.suggestContainer}>
-        <TextInput
-          style={localStyles.input}
-          placeholder="Suggest a new topic"
-          value={newTopic}
-          onChangeText={setNewTopic}
-        />
-       <Pressable style={localStyles.suggestButton} onPress={handleSuggestTopic}>
-          <Text style={localStyles.suggestButtonText}>Suggest</Text>
-        </Pressable>
-      </View>
+      <Button text="Exit" onPress={() => router.replace("/screens/games/trivia/topicSelectionScreen")} />
     </View>
   );
 };
-
-const localStyles = StyleSheet.create({
-    suggestButton: {
-    padding: 10,
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-    borderRadius: 10,
-    padding: 10,
-    marginRight: 10,
-    backgroundColor: "#FFFFFF",
-  },
-  suggestButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-  },
-  flatListContent: {
-    paddingBottom: 20
-  },
-  topicContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    paddingRight: 10
-  },
-  topicButton: {
-    flex: 1,
-    padding: 15,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 10,
-    marginRight: 10,
-  },
-  topicText: {
-    fontSize: 18,
-    fontWeight: "500",
-  },
-  favoriteButton: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: "#EEEEEE",
-  },
-  favoriteButtonSelected: {
-    backgroundColor: COLORS.primary,
-  },
-  favoriteButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333333",
-  },
-  suggestContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-  }
-});
-
-export default TopicSelectionScreen;

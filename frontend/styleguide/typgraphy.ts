@@ -7,4 +7,13 @@ const TYPOGRAPHY = {
   small: { fontSize: 12, fontWeight: '400', lineHeight: 18 },
 };
 
-export default TYPOGRAPHY;
+const FONTSIZE = {
+  h1: 28,
+  h2: 24,
+  h3: 20,
+  body: 16,
+  label: 14,
+  small: 12,
+};
+
+export { FONTSIZE, TYPOGRAPHY };
