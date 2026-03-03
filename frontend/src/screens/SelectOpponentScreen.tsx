@@ -31,7 +31,7 @@ type Props = {
 };
 
 function formatRecord(wins: number, losses: number): string {
-  return `${wins}W-${losses}L`;
+  return `${wins}W-{losses}L`;
 }
 
 export default function SelectOpponentScreen({ navigation, route }: Props) {
@@ -478,6 +478,7 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl,
   },
   rowCard: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.surface,
