@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; //
 import {
   View,
   Text,
@@ -11,20 +11,24 @@ import {
   Modal,
   Pressable,
   Alert,
-} from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../theme';
-import { globalStyles } from '../styles/globalStyles';
-import { RootStackParamList } from '../navigation/types';
-import { useAuth } from '../context/AuthContext';
-import { getWalletBalance, addToWallet } from '../storage/walletStorage';
+} from 'react-native'; //
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'; //
+import { theme } from '../theme'; //
+import { globalStyles } from '../styles/globalStyles'; //
+import { RootStackParamList } from '../navigation/types'; //
+import { useAuth } from '../context/AuthContext'; //
+import { getWalletBalance, addToWallet } from '../storage/walletStorage'; //
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
-};
+}; //
+
+const ADD_FUND_PRESETS = [25, 50, 100]; //
 
 export default function ProfileScreen({ navigation }: Props) {
-  const { user, isLoggedIn, logout, updatePassword } = useAuth();
+  const { user, isLoggedIn, logout, updatePassword } = useAuth(); //
+  
+  // State definitions
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,8 +45,7 @@ export default function ProfileScreen({ navigation }: Props) {
   const [linkAccountRouting, setLinkAccountRouting] = useState('');
   const [linkAccountAccountNumber, setLinkAccountAccountNumber] = useState('');
 
-  const ADD_FUND_PRESETS = [25, 50, 100];
-
+  // Effects & Handlers
   useEffect(() => {
     let cancelled = false;
     getWalletBalance().then((b) => {
@@ -51,55 +54,11 @@ export default function ProfileScreen({ navigation }: Props) {
     return () => { cancelled = true; };
   }, []);
 
-  const handleAddFunds = async (amount: number) => {
-    const newBalance = await addToWallet(amount);
-    setWalletBalance(newBalance);
-  };
-
-  const openAddFundModal = () => {
-    setAddFundCustomAmount('');
-    setAddFundPreset(10);
-    setAddFundModalVisible(true);
-  };
-
-  const openLinkAccountModal = () => {
-    setLinkAccountType('venmo');
-    setLinkAccountVenmoUser('');
-    setLinkAccountBankName('');
-    setLinkAccountRouting('');
-    setLinkAccountAccountNumber('');
-    setLinkAccountModalVisible(true);
-  };
-
-  const closeLinkAccountModal = () => {
-    setLinkAccountModalVisible(false);
-  };
-
-  const handleLinkAccountSubmit = () => {
-    if (linkAccountType === 'venmo') {
-      if (!linkAccountVenmoUser.trim()) {
-        Alert.alert('Missing info', 'Please enter your Venmo username or email.');
-        return;
-      }
-      Alert.alert('Link account', `Venmo account (${linkAccountVenmoUser}) link requested. This feature will be available soon.`, [{ text: 'OK', onPress: closeLinkAccountModal }]);
-    } else {
-      if (!linkAccountBankName.trim() || !linkAccountRouting.trim() || !linkAccountAccountNumber.trim()) {
-        Alert.alert('Missing info', 'Please fill in account holder name, routing number, and account number.');
-        return;
-      }
-      Alert.alert('Link account', 'Bank account link requested. This feature will be available soon.', [{ text: 'OK', onPress: closeLinkAccountModal }]);
-    }
-  };
-
   const formatMoneyInput = (raw: string): string => {
     const digitsAndDot = raw.replace(/[^\d.]/g, '');
     const parts = digitsAndDot.split('.');
-    if (parts.length > 2) {
-      return parts[0] + '.' + parts.slice(1).join('').slice(0, 2);
-    }
-    if (parts.length === 2 && parts[1].length > 2) {
-      return parts[0] + '.' + parts[1].slice(0, 2);
-    }
+    if (parts.length > 2) return parts[0] + '.' + parts.slice(1).join('').slice(0, 2);
+    if (parts.length === 2 && parts[1].length > 2) return parts[0] + '.' + parts[1].slice(0, 2);
     return digitsAndDot;
   };
 
@@ -112,64 +71,61 @@ export default function ProfileScreen({ navigation }: Props) {
     return decPart ? `${withCommas}.${decPart}` : withCommas;
   };
 
+  const handleAddFunds = async (amount: number) => {
+    const newBalance = await addToWallet(amount);
+    setWalletBalance(newBalance);
+  }; //
+
+  const openAddFundModal = () => {
+    setAddFundCustomAmount('');
+    setAddFundPreset(10);
+    setAddFundModalVisible(true);
+  }; //
+
   const confirmAddFund = async () => {
     const amount = addFundCustomAmount.trim() !== ''
       ? parseFloat(addFundCustomAmount.replace(/,/g, ''))
       : addFundPreset;
-
     if (amount == null || Number.isNaN(amount) || amount <= 0) return;
     await handleAddFunds(amount);
     setAddFundModalVisible(false);
     setAddFundCustomAmount('');
-  };
+  }; //
 
-  const hasStoredPassword = isLoggedIn && user?.password != null && user.password !== '';
+  const handleLinkAccountSubmit = () => {
+    if (linkAccountType === 'venmo') {
+      if (!linkAccountVenmoUser.trim()) {
+        Alert.alert('Missing info', 'Please enter your Venmo username or email.');
+        return;
+      }
+      Alert.alert('Link account', `Venmo account (${linkAccountVenmoUser}) link requested. This feature will be available soon.`, [{ text: 'OK', onPress: () => setLinkAccountModalVisible(false) }]);
+    }
+  }; //
+
+  const hasStoredPassword = isLoggedIn && user?.password != null && user.password !== ''; //
 
   const handleUpdatePassword = async () => {
     setPwError('');
     setPwSuccess(false);
-
-    if (hasStoredPassword && !currentPassword) {
-      setPwError('Please enter your current password.');
-      return;
-    }
     if (hasStoredPassword && user?.password !== currentPassword) {
       setPwError('Current password is incorrect.');
-      return;
-    }
-    if (!newPassword) {
-      setPwError('Please enter a new password.');
       return;
     }
     if (newPassword.length < 6) {
       setPwError('New password must be at least 6 characters.');
       return;
     }
-    if (newPassword !== confirmPassword) {
-      setPwError('New passwords do not match.');
-      return;
-    }
-
     const ok = await updatePassword(currentPassword, newPassword);
     if (ok) {
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
       setPwSuccess(true);
-    } else {
-      setPwError('Failed to update password.');
     }
-  };
+  }; //
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>👤</Text>
-        </View>
+        <View style={styles.avatar}><Text style={styles.avatarText}>👤</Text></View>
         <Text style={styles.title}>Profile</Text>
         <Text style={styles.subtitle}>Your stats and settings</Text>
 
@@ -177,52 +133,29 @@ export default function ProfileScreen({ navigation }: Props) {
           <View style={styles.walletRow}>
             <View>
               <Text style={styles.cardLabel}>Wallet</Text>
-              <Text style={styles.cardValue}>
-                {walletBalance !== null ? `$${walletBalance.toFixed(2)}` : '...'}
-              </Text>
+              <Text style={styles.cardValue}>{walletBalance !== null ? `$${walletBalance.toFixed(2)}` : '...'}</Text>
             </View>
-          </View>
-
-          <View style={styles.walletButtonsRow}>
-            <TouchableOpacity style={styles.addFundButton} onPress={openAddFundModal} activeOpacity={0.8}>
-              <Text style={styles.addFundButtonText}>Add Fund</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.linkPaymentButton} onPress={openLinkAccountModal} activeOpacity={0.8}>
-              <Text style={styles.linkPaymentButtonText}>Link Account</Text>
-            </TouchableOpacity>
+            <View style={styles.walletButtonsRow}>
+              <TouchableOpacity style={styles.addFundButton} onPress={openAddFundModal}><Text style={styles.addFundButtonText}>Add Fund</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.linkPaymentButton} onPress={() => setLinkAccountModalVisible(true)}><Text style={styles.linkPaymentButtonText}>Link Account</Text></TouchableOpacity>
+            </View>
           </View>
         </View>
 
-        <Modal
-          visible={addFundModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setAddFundModalVisible(false)}
-        >
+        {/* Add Fund Modal */}
+        <Modal visible={addFundModalVisible} transparent animationType="fade">
           <Pressable style={styles.modalOverlay} onPress={() => setAddFundModalVisible(false)}>
             <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
               <Text style={styles.modalTitle}>Add fund</Text>
               <Text style={styles.modalLabel}>Preset amount</Text>
               <View style={styles.modalChips}>
                 {ADD_FUND_PRESETS.map((amount) => (
-                  <TouchableOpacity
-                    key={amount}
-                    style={[
-                      styles.presetChip,
-                      (addFundPreset === amount || (addFundCustomAmount !== '' && parseFloat(addFundCustomAmount.replace(/,/g, '')) === amount)) && styles.presetChipSelected
-                    ]}
-                    onPress={() => {
-                      setAddFundPreset(amount);
-                      setAddFundCustomAmount(formatWithCommas(String(amount)));
-                    }}
-                    activeOpacity={0.8}
+                  <TouchableOpacity 
+                    key={amount} 
+                    style={[styles.presetChip, addFundPreset === amount && styles.presetChipSelected]}
+                    onPress={() => { setAddFundPreset(amount); setAddFundCustomAmount(formatWithCommas(String(amount))); }}
                   >
-                    <Text style={[
-                      styles.presetChipText,
-                      (addFundPreset === amount || (addFundCustomAmount !== '' && parseFloat(addFundCustomAmount.replace(/,/g, ''))) === amount) && styles.presetChipTextSelected
-                    ]}>
-                      ${amount}
-                    </Text>
+                    <Text style={[styles.presetChipText, addFundPreset === amount && styles.presetChipTextSelected]}>${amount}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -231,8 +164,6 @@ export default function ProfileScreen({ navigation }: Props) {
                 <Text style={styles.moneyInputPrefix}>$</Text>
                 <TextInput
                   style={styles.moneyInput}
-                  placeholder="0.00"
-                  placeholderTextColor={theme.colors.textMuted}
                   value={addFundCustomAmount}
                   onChangeText={(t) => {
                     const raw = formatMoneyInput(t);
@@ -243,147 +174,23 @@ export default function ProfileScreen({ navigation }: Props) {
                 />
               </View>
               <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={[globalStyles.secondaryButton, styles.modalActionButton]}
-                  onPress={() => setAddFundModalVisible(false)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[globalStyles.secondaryButtonText, styles.modalActionButtonText]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[globalStyles.primaryButton, styles.modalActionButton]}
-                  onPress={confirmAddFund}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[globalStyles.primaryButtonText, styles.modalActionButtonText]}>Confirm</Text>
-                </TouchableOpacity>
+                <TouchableOpacity style={[globalStyles.secondaryButton, styles.compactButton]} onPress={() => setAddFundModalVisible(false)}><Text>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity style={[globalStyles.primaryButton, styles.compactButton]} onPress={confirmAddFund}><Text>Confirm</Text></TouchableOpacity>
               </View>
             </Pressable>
           </Pressable>
         </Modal>
 
-        <Modal
-          visible={linkAccountModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={closeLinkAccountModal}
-        >
-          <Pressable style={styles.modalOverlay} onPress={closeLinkAccountModal}>
-            <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-              <Text style={styles.modalTitle}>Link Venmo account</Text>
-              <Text style={styles.modalLabel}>Venmo username or email</Text>
-              <TextInput
-                style={globalStyles.input}
-                placeholder="username or email"
-                placeholderTextColor={theme.colors.textMuted}
-                value={linkAccountVenmoUser}
-                onChangeText={setLinkAccountVenmoUser}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={[globalStyles.secondaryButton, styles.modalActionButton]}
-                  onPress={closeLinkAccountModal}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[globalStyles.secondaryButtonText, styles.modalActionButtonText]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[globalStyles.primaryButton, styles.modalActionButton]}
-                  onPress={handleLinkAccountSubmit}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[globalStyles.primaryButtonText, styles.modalActionButtonText]}>Link account</Text>
-                </TouchableOpacity>
-              </View>
-            </Pressable>
-          </Pressable>
-        </Modal>
-
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Email</Text>
-          <Text style={styles.cardValue}>{isLoggedIn && user ? user.email : 'Not signed in'}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Battles played</Text>
-          <Text style={styles.cardValue}>-</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Quizzes completed</Text>
-          <Text style={styles.cardValue}>-</Text>
-        </View>
-
+        {/* Password & Auth Buttons */}
         {isLoggedIn && (
           <View style={styles.passwordSection}>
             <Text style={styles.sectionTitle}>Update password</Text>
-            {pwError ? <Text style={globalStyles.errorText}>{pwError}</Text> : null}
-            {pwSuccess ? <Text style={globalStyles.successText}>Password updated.</Text> : null}
-            {hasStoredPassword && (
-              <TextInput
-                style={globalStyles.input}
-                placeholder="Current password"
-                placeholderTextColor={theme.colors.textMuted}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry
-              />
-            )}
-            <TextInput
-              style={globalStyles.input}
-              placeholder="New password"
-              placeholderTextColor={theme.colors.textMuted}
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-            />
-            <TextInput
-              style={globalStyles.input}
-              placeholder="Confirm new password"
-              placeholderTextColor={theme.colors.textMuted}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-            />
-            <TouchableOpacity
-              style={globalStyles.secondaryButton}
-              onPress={handleUpdatePassword}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.secondaryButtonText}>
-                {hasStoredPassword ? 'Update password' : 'Set password'}
-              </Text>
+            {hasStoredPassword && <TextInput style={[globalStyles.input, styles.compactInput]} placeholder="Current password" value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry />}
+            <TextInput style={[globalStyles.input, styles.compactInput]} placeholder="New password" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+            <TouchableOpacity style={[globalStyles.secondaryButton, styles.compactButton]} onPress={handleUpdatePassword}>
+              <Text>{hasStoredPassword ? 'Update password' : 'Set password'}</Text>
             </TouchableOpacity>
           </View>
-        )}
-
-        {isLoggedIn ? (
-          <TouchableOpacity
-            style={[globalStyles.primaryButton, styles.primaryButtonMargin]}
-            onPress={() => logout().then(() => navigation.navigate('Home'))}
-            activeOpacity={0.8}
-          >
-            <Text style={globalStyles.primaryButtonText}>Log out</Text>
-          </TouchableOpacity>
-        ) : (
-          <>
-            <TouchableOpacity
-              style={[globalStyles.primaryButton, styles.primaryButtonMargin]}
-              onPress={() => navigation.navigate('Login')}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.primaryButtonText}>Log in</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[globalStyles.secondaryButton, styles.secondaryButtonMargin]}
-              onPress={() => navigation.navigate('SignUp')}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.secondaryButtonText}>Sign up</Text>
-            </TouchableOpacity>
-          </>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -391,191 +198,35 @@ export default function ProfileScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: 0,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: theme.spacing.lg,
-    borderWidth: 2,
-    borderColor: theme.colors.surfaceLight,
-  },
-  avatarText: {
-    fontSize: 40,
-  },
-  title: {
-    fontSize: theme.fontSize.title,
-    fontWeight: '800',
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xs,
-  },
-  subtitle: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.surfaceLight,
-  },
-  cardLabel: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.xs,
-  },
-  cardValue: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  walletRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  walletButtonsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    flexWrap: 'wrap',
-  },
-  addFundButton: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.sm,
-  },
-  addFundButtonText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  linkPaymentButton: {
-    backgroundColor: theme.colors.surfaceLight,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.surfaceLight,
-  },
-  linkPaymentButtonText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-  },
-  modalContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.xl,
-    width: '100%',
-    maxWidth: 320,
-    borderWidth: 2,
-    borderColor: theme.colors.surfaceLight,
-  },
-  modalTitle: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-  },
-  modalLabel: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.sm,
-  },
-  moneyInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md,
-    borderWidth: 2,
-    borderColor: theme.colors.surfaceLight,
-    marginBottom: theme.spacing.md,
-  },
-  moneyInputPrefix: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-    paddingLeft: theme.spacing.lg,
-  },
-  moneyInput: {
-    flex: 1,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.sm,
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-  },
-  modalChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
-  },
-  presetChip: {
-    backgroundColor: theme.colors.background,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radius.full,
-    borderWidth: 2,
-    borderColor: theme.colors.surfaceLight,
-  },
-  presetChipSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
-  },
-  presetChipText: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: theme.colors.textMuted,
-  },
-  presetChipTextSelected: {
-    color: theme.colors.primary,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    marginTop: theme.spacing.lg,
-    justifyContent: 'flex-end',
-  },
-  modalActionButton: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-  },
-  modalActionButtonText: {
-    fontSize: theme.fontSize.sm,
-  },
-  primaryButtonMargin: { marginTop: theme.spacing.lg },
-  secondaryButtonMargin: { marginTop: theme.spacing.sm },
-  passwordSection: {
-    marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-});
+  container: { flex: 1, backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.lg, paddingTop: 0 }, //
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.surface, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: theme.spacing.md, borderWidth: 2, borderColor: theme.colors.surfaceLight }, //
+  avatarText: { fontSize: 28 }, //
+  title: { fontSize: theme.fontSize.xl, fontWeight: '800', color: theme.colors.text, textAlign: 'center', marginBottom: 2 }, //
+  subtitle: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted, textAlign: 'center', marginBottom: theme.spacing.md }, //
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.sm, padding: theme.spacing.sm, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.surfaceLight }, //
+  cardLabel: { fontSize: 12, color: theme.colors.textMuted, marginBottom: 2 }, //
+  cardValue: { fontSize: theme.fontSize.sm, fontWeight: '600', color: theme.colors.text }, //
+  walletRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, //
+  walletButtonsRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, flexWrap: 'wrap' }, //
+  addFundButton: { backgroundColor: theme.colors.primary, paddingVertical: 4, paddingHorizontal: theme.spacing.xs, borderRadius: theme.radius.sm }, //
+  addFundButtonText: { fontSize: 12, fontWeight: '600', color: theme.colors.text }, //
+  linkPaymentButton: { backgroundColor: theme.colors.surfaceLight, paddingVertical: 4, paddingHorizontal: theme.spacing.xs, borderRadius: theme.radius.sm, borderWidth: 1, borderColor: theme.colors.surfaceLight }, //
+  linkPaymentButtonText: { fontSize: 12, fontWeight: '600', color: theme.colors.text }, //
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg }, //
+  modalContent: { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, padding: theme.spacing.md, width: '100%', maxWidth: 280, borderWidth: 2, borderColor: theme.colors.surfaceLight }, //
+  modalTitle: { fontSize: theme.fontSize.md, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.sm, textAlign: 'center' }, //
+  modalLabel: { fontSize: 12, color: theme.colors.textMuted, marginBottom: theme.spacing.xs }, //
+  moneyInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: theme.radius.sm, borderWidth: 2, borderColor: theme.colors.surfaceLight, marginBottom: theme.spacing.sm }, //
+  moneyInputPrefix: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted, paddingLeft: theme.spacing.sm }, //
+  moneyInput: { flex: 1, paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm, fontSize: theme.fontSize.sm, color: theme.colors.text }, //
+  modalChips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs, marginBottom: theme.spacing.sm }, //
+  presetChip: { backgroundColor: theme.colors.background, paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.full, borderWidth: 2, borderColor: theme.colors.surfaceLight }, //
+  presetChipSelected: { borderColor: theme.colors.primary, backgroundColor: 'rgba(99, 102, 241, 0.2)' }, //
+  presetChipText: { fontSize: theme.fontSize.sm, fontWeight: '600', color: theme.colors.textMuted }, //
+  presetChipTextSelected: { color: theme.colors.primary }, //
+  modalActions: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.sm, justifyContent: 'flex-end' }, //
+  compactInput: { paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm, marginBottom: theme.spacing.sm, fontSize: theme.fontSize.sm }, //
+  compactButton: { paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.sm }, //
+  passwordSection: { marginTop: theme.spacing.md, marginBottom: theme.spacing.md }, //
+  sectionTitle: { fontSize: theme.fontSize.md, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.sm }, //
+}); //

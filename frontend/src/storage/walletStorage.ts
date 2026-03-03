@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const WALLET_STORAGE_KEY = '@trivia_battle_wallet';
-const DEFAULT_BALANCE = 100;
+const DEFAULT_BALANCE = 20;
 
 export async function getWalletBalance(): Promise<number> {
   try {

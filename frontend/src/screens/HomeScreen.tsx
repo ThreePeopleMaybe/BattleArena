@@ -83,6 +83,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.xs,
   },
   authRow: {
+    flexDirection: 'row',
     gap: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
   },
