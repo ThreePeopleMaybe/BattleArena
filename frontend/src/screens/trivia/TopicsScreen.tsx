@@ -28,7 +28,7 @@ export default function TopicsScreen({ navigation, route }: Props) {
 
   const [search, setSearch] = useState('');
   const [favouriteTopicIds, setFavouriteTopicIds] = useState<string[]>([]);
-  const [showFavouritesOnly, setShowFavouritesOnly] = useState(true);
+  const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
   const [autoSelectSecondsLeft, setAutoSelectSecondsLeft] = useState(30);
 
   useEffect(() => {

@@ -12,13 +12,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { theme } from '../theme';
 import { globalStyles } from '../styles/globalStyles';
 import { RootStackParamList } from '../navigation/types';
 import type { Opponent } from '../data/opponents';
 import { fetchOpponents } from '../api/opponents';
 import { getSavedWager, saveWager } from '../storage/wagerStorage';
+import { getWalletBalance } from '../storage/walletStorage';
 import { getFavouriteOpponentIds, toggleFavouriteOpponent } from '../storage/favouritesStorage';
 import { useAuth } from '../context/AuthContext';
 
@@ -39,9 +40,11 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
   const [opponents, setOpponents] = useState<Opponent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [wagerAmount, setWagerAmount] = useState(0);
   const [wagerLoaded, setWagerLoaded] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [favouriteOpponentIds, setFavouriteOpponentIds] = useState<string[]>([]);
 
@@ -73,34 +76,56 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
     getFavouriteOpponentIds().then(setFavouriteOpponentIds);
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (isLoggedIn) getWalletBalance().then(setWalletBalance);
+    }, [isLoggedIn])
+  );
+
   const handleToggleFavouriteOpponent = async (id: string) => {
     const next = await toggleFavouriteOpponent(id);
     setFavouriteOpponentIds(next);
   };
 
-  const pickableForAutoPick = useMemo(() => {
-    if (!isLoggedIn) {
-      return opponents.filter((o) => o.wager == null || o.wager === undefined);
-    }
-    return wagerAmount === 0
-      ? opponents
-      : opponents.filter((o) => o.wager == null || o.wager === wagerAmount);
-  }, [opponents, wagerAmount, isLoggedIn]);
+  const effectiveWager = useMemo(() => {
+    if (!isLoggedIn || wagerAmount <= 0) return 0;
+    if (walletBalance !== null && walletBalance < wagerAmount) return 0;
+    return wagerAmount;
+  }, [isLoggedIn, wagerAmount, walletBalance]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) {
-      return pickableForAutoPick.filter((o) => favouriteOpponentIds.includes(o.id));
+    const favourites = opponents.filter((o) => favouriteOpponentIds.includes(o.id));
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return favourites;
+    const searchMatches = opponents.filter((o) => o.name.toLowerCase().includes(q));
+    const seen = new Set<string>();
+    const result: Opponent[] = [];
+    for (const o of [...favourites, ...searchMatches]) {
+      if (!seen.has(o.id)) {
+        seen.add(o.id);
+        result.push(o);
+      }
     }
-    return pickableForAutoPick.filter((o) => o.name.toLowerCase() === q);
-  }, [pickableForAutoPick, search, favouriteOpponentIds]);
+    return result;
+  }, [opponents, favouriteOpponentIds, searchQuery]);
+
+  const pickableForAutoPick = filtered.length > 0 ? filtered : opponents;
+
+  const handleSearch = () => {
+    const q = searchInput.trim();
+    setSearchQuery(q);
+    if (q) {
+      const hasMatches = opponents.some((o) => o.name.toLowerCase().includes(q.toLowerCase()));
+      if (hasMatches) setSearchInput('');
+    }
+  };
 
   const handleSelect = (name: string) => {
-    const effectiveWager = isLoggedIn && wagerAmount > 0 ? wagerAmount : undefined;
+    const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : undefined;
     navigation.navigate('Topics', {
       mode: 'battle',
       opponentName: name,
-      wagerAmount: effectiveWager,
+      wagerAmount: wager,
     });
   };
 
@@ -108,10 +133,10 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
     if (!Array.isArray(pickableForAutoPick) || pickableForAutoPick.length === 0) return;
     const names = pickableForAutoPick.map((o) => o.name).filter(Boolean);
     if (names.length === 0) return;
-    const effectiveWager = isLoggedIn && wagerAmount > 0 ? wagerAmount : undefined;
+    const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : undefined;
     navigation.navigate('MatchingOpponent', {
       opponentNames: names,
-      wagerAmount: effectiveWager,
+      wagerAmount: wager,
     });
   };
 
@@ -134,12 +159,14 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
       );
       return;
     }
+    getWalletBalance().then(setWalletBalance);
     setModalVisible(true);
   };
 
   const renderOpponentRow = useCallback(
     ({ item: opponent }: { item: Opponent }) => {
       const isFav = favouriteOpponentIds.includes(opponent.id);
+      const wagerLabel = opponent.wager !== null ? `$${opponent.wager}` : 'Any';
       return (
         <View style={styles.rowCard}>
           <TouchableOpacity
@@ -147,8 +174,11 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
             onPress={() => handleSelect(opponent.name)}
             activeOpacity={0.8}
           >
-            <Text style={styles.rowName}>{opponent.name}</Text>
-            <Text style={styles.rowRecord}>{formatRecord(opponent.wins, opponent.losses)}</Text>
+            <View style={styles.rowCardInfo}>
+              <Text style={styles.rowName}>{opponent.name}</Text>
+              <Text style={styles.rowRecord}>{formatRecord(opponent.wins, opponent.losses)}</Text>
+            </View>
+            <Text style={styles.rowWager}>{wagerLabel}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.favButton}
@@ -172,14 +202,12 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
   const listEmptyComponent = useCallback(
     () => (
       <Text style={globalStyles.emptyState}>
-        {!search.trim()
-          ? favouriteOpponentIds.length === 0
-            ? 'No favourites yet. Search by name to find opponents, then tap the star to add them to favourites.'
-            : 'No favourites match your current wager.'
-          : `No match for "${search}"`}
+        {searchQuery.trim()
+          ? `No match for "${searchQuery}"`
+          : 'No favourites yet. Search by name to find opponents, then tap the star to add them to favourites.'}
       </Text>
     ),
-    [favouriteOpponentIds.length, search]
+    [searchQuery]
   );
 
   return (
@@ -190,45 +218,54 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
         <TouchableOpacity
           style={styles.battleAgainCard}
           onPress={() => {
-            const effectiveWager = isLoggedIn && wagerAmount > 0 ? wagerAmount : undefined;
+            const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : undefined;
             navigation.navigate('MatchingOpponent', {
               opponentNames: [battleAgainOpponentName],
-              wagerAmount: effectiveWager,
+              wagerAmount: wager,
               startInWaitingPhase: true,
             });
           }}
           activeOpacity={0.8}
         >
-          <Text style={styles.battleAgainLabel}>
-            Battle <Text style={styles.battleAgainName}>{battleAgainOpponentName}</Text> again
-          </Text>
+          <Text style={styles.battleAgainLabel}>Battle <Text style={styles.battleAgainName}>{battleAgainOpponentName}</Text> again</Text>
         </TouchableOpacity>
       ) : null}
 
       <View style={styles.wagerDisplayRow}>
-        <Text style={styles.wagerLabel}>Current wager</Text>
-        <TouchableOpacity
-          style={[
-            styles.wagerChip,
-            styles.wagerChipDisplay,
-            isLoggedIn && wagerAmount > 0 && styles.wagerChipSelected,
-            !isLoggedIn && styles.wagerChipDisabled,
-          ]}
-          onPress={openWagerModal}
-          activeOpacity={0.8}
-        >
-          <Text
+        <View style={styles.wagerSpacer} />
+        <View style={styles.wagerCenterSection}>
+          <Text style={styles.wagerLabel}>Wager</Text>
+          <TouchableOpacity
             style={[
-              styles.wagerChipText,
-              isLoggedIn && wagerAmount > 0 && styles.wagerChipTextSelected,
-              !isLoggedIn && styles.wagerChipTextDisabled,
+              styles.wagerChip,
+              styles.wagerChipDisplay,
+              isLoggedIn && effectiveWager > 0 && styles.wagerChipSelected,
+              !isLoggedIn && styles.wagerChipDisabled,
             ]}
+            onPress={openWagerModal}
+            activeOpacity={0.8}
           >
-            {!isLoggedIn
-              ? 'Log in to wager'
-              : wagerLoaded ? (wagerAmount === 0 ? 'None' : `$${wagerAmount}`) : '...'}
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.wagerChipText,
+                isLoggedIn && effectiveWager > 0 && styles.wagerChipTextSelected,
+                !isLoggedIn && styles.wagerChipTextDisabled,
+              ]}
+            >
+              {!isLoggedIn ? 'Log in to wager' : wagerLoaded ? (effectiveWager === 0 ? 'None' : `$${effectiveWager}`) : '...'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.wagerSpacer}>
+          {isLoggedIn && (
+            <View style={styles.balanceChip}>
+              <Text style={styles.balanceLabel}>Balance</Text>
+              <Text style={styles.balanceAmount}>
+                {walletBalance !== null ? `$${walletBalance.toFixed(2)}` : '...'}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.autoPickRow}>
@@ -243,26 +280,31 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       </View>
 
-      <TextInput
-        style={globalStyles.searchInput}
-        placeholder="Search by name..."
-        placeholderTextColor={theme.colors.textMuted}
-        value={search}
-        onChangeText={setSearch}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+      <View style={styles.searchRow}>
+        <TextInput
+          style={[globalStyles.searchInput, styles.searchInputFlex]}
+          placeholder="Search by name..."
+          placeholderTextColor={theme.colors.textMuted}
+          value={searchInput}
+          onChangeText={setSearchInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <TouchableOpacity
+          style={[globalStyles.smallButton, styles.searchButton]}
+          onPress={handleSearch}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="search" size={20} color={theme.colors.text} />
+        </TouchableOpacity>
+      </View>
 
       {loading ? (
         <Text style={globalStyles.mutedText}>Loading opponents...</Text>
       ) : error ? (
         <View style={styles.errorWrap}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
-            style={[globalStyles.smallButton, styles.retryButton]} 
-            onPress={loadOpponents} 
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={[globalStyles.smallButton, styles.retryButton]} onPress={loadOpponents} activeOpacity={0.8}>
             <Text style={globalStyles.smallButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -292,23 +334,32 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
           <Pressable style={globalStyles.modalContent} onPress={(e) => e.stopPropagation()}>
             <Text style={globalStyles.modalTitle}>Select wager amount</Text>
             <View style={styles.modalChips}>
-              {WAGER_OPTIONS.map((amount) => (
-                <TouchableOpacity
-                  key={amount}
-                  style={[styles.wagerChip, wagerAmount === amount && styles.wagerChipSelected]}
-                  onPress={() => handleWagerSelect(amount)}
-                  activeOpacity={0.8}
-                >
-                  <Text
+              {WAGER_OPTIONS.map((amount) => {
+                const exceedsBalance = amount > 0 && walletBalance !== null && amount > walletBalance;
+                return (
+                  <TouchableOpacity
+                    key={amount}
                     style={[
-                      styles.wagerChipText,
-                      wagerAmount === amount && styles.wagerChipTextSelected,
+                      styles.wagerChip,
+                      wagerAmount === amount && styles.wagerChipSelected,
+                      exceedsBalance && styles.wagerChipDisabled,
                     ]}
+                    onPress={() => !exceedsBalance && handleWagerSelect(amount)}
+                    activeOpacity={0.8}
+                    disabled={exceedsBalance}
                   >
-                    {amount === 0 ? 'None' : `$${amount}`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.wagerChipText,
+                        wagerAmount === amount && styles.wagerChipTextSelected,
+                        exceedsBalance && styles.wagerChipTextDisabled,
+                      ]}
+                    >
+                      {amount === 0 ? 'None' : `$${amount}`}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
             <TouchableOpacity
               style={globalStyles.primaryButton}
@@ -330,6 +381,24 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     marginRight: theme.spacing.sm,
   },
+  balanceChip: {
+    backgroundColor: theme.colors.surface,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.sm,
+    borderWidth: 2,
+    borderColor: theme.colors.success,
+  },
+  balanceLabel: {
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    marginBottom: 2,
+  },
+  balanceAmount: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: '700',
+    color: theme.colors.success,
+  },
   battleAgainCard: {
     backgroundColor: '#15803d',
     borderRadius: theme.radius.md,
@@ -341,7 +410,7 @@ const styles = StyleSheet.create({
   },
   battleAgainLabel: {
     fontSize: theme.fontSize.sm,
-    color: 'rgba(255,255,255,0.9)',
+    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: theme.spacing.xs,
   },
   battleAgainName: {
@@ -352,12 +421,36 @@ const styles = StyleSheet.create({
   wagerDisplayRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: theme.spacing.lg,
+  },
+  wagerSpacer: {
+    flex: 1,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  wagerCenterSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   wagerChipDisplay: {
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+  },
+  searchInputFlex: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  searchButton: {
+    flexShrink: 0,
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.xs,
   },
   autoPickRow: {
     flexDirection: 'row',
@@ -385,7 +478,6 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl,
   },
   rowCard: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.surface,
@@ -398,6 +490,18 @@ const styles = StyleSheet.create({
   },
   rowCardMain: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowCardInfo: {
+    flex: 1,
+  },
+  rowWager: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+    color: theme.colors.primary,
+    marginLeft: theme.spacing.sm,
   },
   favButton: {
     padding: theme.spacing.xs,
