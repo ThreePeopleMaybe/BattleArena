@@ -106,7 +106,6 @@ export async function joinArena(code: string, memberId: string, memberName: stri
 
   const trimmedName = memberName.trim() || 'Player';
   
-  // Prevent duplicate entries
   if (arena.members.some((m) => m.id === memberId)) return arena;
 
   arena.members.push({ id: memberId, name: trimmedName, joinedAt: Date.now() });

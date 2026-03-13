@@ -1,4 +1,4 @@
-import { QuizQuestionResult } from '../types';
+import type { QuizQuestionResult } from '../types';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -11,7 +11,7 @@ export type RootStackParamList = {
   CreateTeam: { teamId?: string };
   SelectOpponent: { battleAgainOpponentName?: string; wagerAmount?: number } | undefined;
   MatchingOpponent: { opponentNames: string[]; wagerAmount?: number; startInWaitingPhase?: boolean };
-  Topics: { mode: 'battle'; yourTopicId?: string; opponentName?: string; wagerAmount?: number; fromArena?: boolean; arenaId?: string } | undefined;
+  Topics: { mode?: 'battle'; yourTopicId?: string; opponentName?: string; wagerAmount?: number; fromArena?: boolean; arenaId?: string } | undefined;
   Quiz: { topicId: string; opponentTopicId?: string; battleMode?: boolean; opponentName?: string; wagerAmount?: number; arenaId?: string };
   Battle: { topicId: string; opponentTopicId: string; opponentName: string; wagerAmount: number; arenaId?: string };
   BattleResult: {
