@@ -94,19 +94,23 @@ export default function BattleResultScreen({ navigation, route }: Props) {
       <View style={styles.actions}>
         <TouchableOpacity
           style={globalStyles.primaryButton}
-          onPress={() =>
-            navigation.navigate(
-              isBattle ? 'SelectOpponent' : 'Topics',
-              isBattle ? { battleAgainOpponentName: opponentName, wagerAmount } : undefined
-            )
-          }
+          onPress={() => {
+            if (isBattle) {
+              navigation.navigate('SelectOpponent', { battleAgainOpponentName: opponentName, wagerAmount });
+            } else {
+              navigation.navigate('Topics');
+            }
+          }}
           activeOpacity={0.8}
         >
-          <Text style={globalStyles.primaryButtonText}>{isBattle ? 'Battle again' : 'Play again'}</Text>
+          <Text style={globalStyles.primaryButtonText}>
+            {isBattle ? 'Battle again' : 'Play again'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={globalStyles.secondaryButton} 
-          onPress={() => navigation.navigate('Home')} 
+
+        <TouchableOpacity
+          style={globalStyles.secondaryButton}
+          onPress={() => navigation.navigate('Home')}
           activeOpacity={0.8}
         >
           <Text style={globalStyles.secondaryButtonText}>Home</Text>

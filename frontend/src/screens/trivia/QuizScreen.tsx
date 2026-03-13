@@ -22,7 +22,7 @@ function generateOpponentScore(userCorrect: number, total: number): { correct: n
 }
 
 export default function QuizScreen({ navigation, route }: Props) {
-  const { topicId, opponentTopicId, battleMode, opponentName, wagerAmount } = route.params;
+  const { topicId, opponentTopicId, battleMode, opponentName, wagerAmount, arenaId } = route.params;
   
   const [questions] = useState<Question[]>(() => 
     opponentTopicId
@@ -69,10 +69,34 @@ export default function QuizScreen({ navigation, route }: Props) {
       let name = '';
 
       if (battleMode && opponentName) {
+        if (opponentName === 'Arena' && arenaId) {
+          navigation.replace('WaitingForPlayers', {
+            mode: 'arena',
+            arenaId,
+            userCorrect,
+            userTimeMs: timeMs,
+            questionCount: total,
+          });
+          return;
+        }
+        
         const opp = generateOpponentScore(userCorrect, total);
         opponentCorrect = opp.correct;
         opponentTimeMs = opp.timeMs;
         name = opponentName;
+        
+        navigation.replace('WaitingForPlayers', {
+          mode: 'battle',
+          topicId,
+          userCorrect,
+          userTimeMs: timeMs,
+          opponentCorrect,
+          opponentTimeMs,
+          opponentName: name,
+          questionResults: finalResults,
+          wagerAmount,
+        });
+        return;
       }
 
       navigation.replace('BattleResult', {
@@ -92,7 +116,7 @@ export default function QuizScreen({ navigation, route }: Props) {
     setCurrentIndex((i) => i + 1);
     setSelectedIndex(null);
     setAnswered(false);
-  }, [isLast, startTime, navigation, topicId, selectedIndex, question, battleMode, opponentName, questions.length, questionResults, wagerAmount]);
+  }, [isLast, startTime, navigation, topicId, selectedIndex, question, battleMode, opponentName, questions.length, questionResults, wagerAmount, arenaId]);
 
   // Auto-advance after any answer
   useEffect(() => {
@@ -119,10 +143,34 @@ export default function QuizScreen({ navigation, route }: Props) {
     let name = '';
 
     if (battleMode && opponentName) {
+      if (opponentName === 'Arena' && arenaId) {
+        navigation.replace('WaitingForPlayers', {
+          mode: 'arena',
+          arenaId,
+          userCorrect,
+          userTimeMs: timeMs,
+          questionCount: questions.length,
+        });
+        return;
+      }
+
       const opp = generateOpponentScore(userCorrect, questions.length);
       opponentCorrect = opp.correct;
       opponentTimeMs = opp.timeMs;
       name = opponentName;
+
+      navigation.replace('WaitingForPlayers', {
+        mode: 'battle',
+        topicId,
+        userCorrect,
+        userTimeMs: timeMs,
+        opponentCorrect,
+        opponentTimeMs,
+        opponentName: name,
+        questionResults: fullResults,
+        wagerAmount,
+      });
+      return;
     }
 
     navigation.replace('BattleResult', {
@@ -135,7 +183,7 @@ export default function QuizScreen({ navigation, route }: Props) {
       questionResults: fullResults,
       wagerAmount,
     });
-  }, [elapsed, currentIndex, questionResults, questions, battleMode, opponentName, navigation, topicId, wagerAmount]);
+  }, [elapsed, currentIndex, questionResults, questions, battleMode, opponentName, navigation, topicId, wagerAmount, arenaId]);
 
   if (!question) {
     return (
