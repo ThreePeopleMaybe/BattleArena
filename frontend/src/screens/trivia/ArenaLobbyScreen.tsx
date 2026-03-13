@@ -79,14 +79,12 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
 
   return (
     <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
-      {/* Join Code Section */}
       <View style={styles.joinCodeBox}>
         <Text style={styles.joinCodeLabel}>Arena join code</Text>
         <Text style={styles.joinCodeValue}>{arena.joinCode}</Text>
         <Text style={styles.joinCodeHint}>Share this code so players can join</Text>
       </View>
 
-      {/* Wager Display Section */}
       <View style={styles.wagerDisplayRow}>
         <View style={styles.wagerSpacer} />
         <View style={styles.wagerCenterSection}>
@@ -164,7 +162,6 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
         </Pressable>
       </Modal>
 
-      {/* Action Button */}
       <TouchableOpacity
         style={[globalStyles.primaryButton, styles.startButton]}
         onPress={() => navigation.navigate('Topics', { mode: 'battle', fromArena: true, wagerAmount: arena.wagerAmount, arenaId: arena.id })}
@@ -173,7 +170,6 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
         <Text style={globalStyles.primaryButtonText}>Open Arena</Text>
       </TouchableOpacity>
 
-      {/* Players List */}
       <Text style={styles.membersLabel}>Players ({arena.members.length})</Text>
       <ScrollView style={styles.memberList} contentContainerStyle={styles.memberListContent}>
         {arena.members.map((m) => (
