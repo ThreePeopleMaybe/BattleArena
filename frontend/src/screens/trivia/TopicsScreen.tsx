@@ -24,7 +24,9 @@ export default function TopicsScreen({ navigation, route }: Props) {
   const yourTopicId = route.params?.yourTopicId;
   const opponentName = route.params?.opponentName;
   const wagerAmount = route.params?.wagerAmount;
-  const pickingOpponentTopic = isBattle && !!yourTopicId;
+  const fromArena = route.params?.fromArena === true;
+  const arenaId = route.params?.arenaId;
+  const pickingOpponentTopic = isBattle && !!yourTopicId && !fromArena;
 
   const [search, setSearch] = useState('');
   const [favouriteTopicIds, setFavouriteTopicIds] = useState<string[]>([]);
@@ -49,9 +51,25 @@ export default function TopicsScreen({ navigation, route }: Props) {
     return byFav.filter((t) => t.name.toLowerCase().includes(q));
   }, [search, showFavouritesOnly, favouriteTopicIds]);
 
+  const autoSelectIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const handleTopicPress = (topicId: string) => {
+    if (autoSelectIntervalRef.current) {
+      clearInterval(autoSelectIntervalRef.current);
+      autoSelectIntervalRef.current = null;
+    }
     if (!isBattle) {
       navigation.navigate('Quiz', { topicId });
+      return;
+    }
+    if (fromArena) {
+      navigation.navigate('Battle', {
+        topicId,
+        opponentTopicId: topicId,
+        opponentName: 'Arena',
+        wagerAmount: wagerAmount ?? 0,
+        arenaId,
+      });
       return;
     }
     if (pickingOpponentTopic) {
@@ -59,10 +77,17 @@ export default function TopicsScreen({ navigation, route }: Props) {
         topicId: yourTopicId!,
         opponentTopicId: topicId,
         opponentName: opponentName ?? 'Opponent',
-        wagerAmount,
+        wagerAmount: wagerAmount ?? 0,
       });
     } else {
-      navigation.navigate('Topics', { mode: 'battle', yourTopicId: topicId, opponentName, wagerAmount });
+      // Battle mode: auto-select same topic for opponent
+      navigation.navigate('Battle', {
+        topicId,
+        opponentTopicId: topicId,
+        opponentName: opponentName ?? 'Opponent',
+        wagerAmount: wagerAmount ?? 0,
+        arenaId,
+      });
     }
   };
 
@@ -79,14 +104,23 @@ export default function TopicsScreen({ navigation, route }: Props) {
     const interval = setInterval(() => {
       setAutoSelectSecondsLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
-          handleAutoSelectRef.current();
+          if (autoSelectIntervalRef.current) {
+            clearInterval(autoSelectIntervalRef.current);
+            autoSelectIntervalRef.current = null;
+          }
+          setTimeout(() => handleAutoSelectRef.current(), 0);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(interval);
+    autoSelectIntervalRef.current = interval;
+    return () => {
+      if (autoSelectIntervalRef.current) {
+        clearInterval(autoSelectIntervalRef.current);
+        autoSelectIntervalRef.current = null;
+      }
+    };
   }, []);
 
   const showSearch = isBattle;
@@ -220,85 +254,11 @@ export default function TopicsScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  containerExtra: {},
-  wagerBanner: {
-    backgroundColor: theme.colors.surface,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  wagerBannerMuted: {
-    borderColor: theme.colors.surfaceLight,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  wagerBannerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  wagerBannerLabel: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  wagerBannerAmount: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '800',
-    color: theme.colors.primary,
-    marginLeft: 'auto',
-  },
-  wagerBannerAmountMuted: {
-    color: theme.colors.textMuted,
-    fontWeight: '600',
-  },
-  waitingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.surfaceLight,
-  },
-  waitingSpinner: {
-    marginRight: theme.spacing.sm,
-  },
-  waitingBannerTextWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  waitingText: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: theme.colors.text,
-    flex: 1,
-  },
-  waitingCountdown: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-    marginLeft: theme.spacing.sm,
-  },
-  waitingCountdownNumber: {
-    fontWeight: '700',
-    color: theme.colors.primary,
+  containerExtra: {
+    paddingBottom: 0,
   },
   countdownRow: {
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
     alignItems: 'center',
   },
   countdownText: {
@@ -311,75 +271,140 @@ const styles = StyleSheet.create({
   },
   autoPickRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
     gap: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
   autoSelectButtonFlex: {
     flex: 1,
   },
   filterIconBtn: {
-    width: 48,
-    minWidth: 48,
+    width: 44,
+    height: 44,
     borderRadius: theme.radius.md,
-    borderWidth: 2,
-    borderColor: theme.colors.surfaceLight,
     backgroundColor: theme.colors.surface,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.surfaceLight,
   },
   filterIconBtnSelected: {
     borderColor: theme.colors.primary,
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
   },
   favCountBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -4,
+    right: -4,
     backgroundColor: theme.colors.primary,
-    alignItems: 'center',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 4,
   },
   favCountText: {
+    color: '#fff',
     fontSize: 10,
-    fontWeight: '700',
-    color: theme.colors.text,
+    fontWeight: '800',
   },
   list: {
     paddingBottom: theme.spacing.xl,
+    gap: theme.spacing.sm,
   },
   topicRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.sm,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.xs,
+    borderRadius: theme.radius.md,
     borderLeftWidth: 4,
+    overflow: 'hidden',
   },
   topicRowMain: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  favButton: {
-    padding: theme.spacing.xs,
-    marginLeft: theme.spacing.sm,
+    padding: theme.spacing.md,
   },
   topicRowIcon: {
     fontSize: 24,
-    marginRight: theme.spacing.sm,
+    marginRight: theme.spacing.md,
   },
   topicRowName: {
     fontSize: theme.fontSize.md,
     fontWeight: '600',
     color: theme.colors.text,
+  },
+  favButton: {
+    padding: theme.spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wagerBanner: {
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  wagerBannerMuted: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.surfaceLight,
+  },
+  wagerBannerInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+  },
+  wagerBannerLabel: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  wagerBannerAmount: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '800',
+    color: theme.colors.primary,
+  },
+  wagerBannerAmountMuted: {
+    color: theme.colors.textMuted,
+  },
+  waitingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.surfaceLight,
+  },
+  waitingSpinner: {
+    marginRight: theme.spacing.md,
+  },
+  waitingBannerTextWrap: {
     flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  waitingText: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+    color: theme.colors.text,
+    flex: 1,
+  },
+  waitingCountdown: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.textMuted,
+    marginLeft: theme.spacing.sm,
+  },
+  waitingCountdownNumber: {
+    fontWeight: '700',
+    color: theme.colors.primary,
   },
 });
