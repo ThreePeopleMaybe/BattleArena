@@ -10,8 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddNpgsqlDbContext<BattleArenaDbContext>("battlearena");
 builder.Services.AddInfrastructure();
-builder.Services.AddMediatR(typeof(GetUserByIdQuery).Assembly);
-builder.Services.AddAutoMapper(typeof(UserMappingProfile).Assembly);
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetUserByIdQuery>());
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();

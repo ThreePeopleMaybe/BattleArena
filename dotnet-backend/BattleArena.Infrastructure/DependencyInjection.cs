@@ -17,7 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IUserCommandRepository, UserCommandRepository>();
         services.AddScoped<IQuestionTopicQueryRepository, QuestionTopicQueryRepository>();
         services.AddScoped<IQuestionQueryRepository, QuestionQueryRepository>();
-        services.AddAutoMapper(typeof(DbToDtoMapper));
+        services.AddAutoMapper(cfg => cfg.AddProfile<DbToDtoMapper>());
 
         return services;
     }
