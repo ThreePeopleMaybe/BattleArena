@@ -36,5 +36,10 @@ public class Question
     [Column("points")]
     public int Points { get; set; } = 1;
 
+    [Column("topic_category_id")]
+    public int TopicCategoryId { get; set; }
+
+    [Column("correct_choice_id")]
+    public int CorrectChoiceId { get; set; }
     public ICollection<QuestionChoice>? Choices { get; set; }
 }

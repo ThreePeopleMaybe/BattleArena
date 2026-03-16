@@ -14,6 +14,15 @@ public class BattleArenaDbContext(DbContextOptions<BattleArenaDbContext> options
 
     public DbSet<Team> Teams { get; set; }
 
+    public DbSet<ActivePlayer> ActivePlayers { get; set; }
+
+    public DbSet<QuestionChoice> QuestionChoices { get; set; }
+
+    public DbSet<FavoritePlayer> FavoritePlayers { get; set; }
+    public DbSet<QuestionTopicCategory> QuestionTopicCategories { get; set; }
+    public DbSet<WinLoss> WinsLosses { get; set; }
+    public DbSet<Wager> Wagers { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Game>().Property(e => e.Type).HasConversion(x => x.ToString(), x => Enum.Parse<GameType>(x));

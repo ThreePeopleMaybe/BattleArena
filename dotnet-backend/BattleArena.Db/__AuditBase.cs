@@ -16,5 +16,5 @@ public abstract class AuditBase
     public DateTimeOffset UpdatedAt { get; set; }
 
     [Column("updated_by", TypeName = "varchar(255)", Order = 10003)]
-    public required string UpdatedBy { get; set; }
+    public string UpdatedBy { get; set; }
 }

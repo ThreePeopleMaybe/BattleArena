@@ -19,7 +19,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BattleArena.Application\BattleArena.Application.csproj" />
       <ProjectReference Include="..\BattleArena.Db\BattleArena.Db.csproj" />
+      <ProjectReference Include="..\BattleArena.Infrastructure\BattleArena.Infrastructure.csproj" />
       <ProjectReference Include="..\BattleArena.ServiceDefaults\BattleArena.ServiceDefaults.csproj" />
     </ItemGroup>
 

@@ -12,9 +12,9 @@ if (builder.ExecutionContext.IsRunMode)
     postgres.WithDataVolume();
 }
 
-var db = postgres.AddDatabase("battlearena-db");
+var db = postgres.AddDatabase("battlearena");
 
-var dbManager = builder.AddProject<BattleArena_DbManager>("battlearena-dbmanager")
+var dbManager = builder.AddProject<BattleArena_DbManager>("battlearenamanager")
     .WithReference(db)
     .WaitFor(db)
     .WithHttpHealthCheck("/health")
