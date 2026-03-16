@@ -26,6 +26,6 @@ public static class UserApi
 
         return group;
     }
-
-    public record User(int Id, string Username, string FirstName, string LastName, string? Email, string? PhoneNumber);
 }
+
+public record User(int Id, string Username, string FirstName, string LastName, string? Email, string? PhoneNumber);

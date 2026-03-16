@@ -20,4 +20,7 @@ public class QuestionChoice
 
     [Column("is_correct_choice")]
     public bool IsCorrectChoice { get; set; }
+
+    [Column("topic_category_id")]
+    public int TopicCategoryId { get; set; } = 1;
 }

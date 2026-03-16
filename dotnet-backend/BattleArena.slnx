@@ -4,8 +4,12 @@
     <File Path=".editorconfig" />
   </Folder>
   <Project Path="BattleArena.Api\BattleArena.Api.csproj" />
+  <Project Path="BattleArena.Application/BattleArena.Application.csproj" />
   <Project Path="BattleArena.DbManager\BattleArena.DbManager.csproj" />
   <Project Path="BattleArena.Db\BattleArena.Db.csproj" />
+  <Project Path="BattleArena.Domain/BattleArena.Domain.csproj" />
+  <Project Path="BattleArena.Extensions/BattleArena.Extensions.csproj" />
+  <Project Path="BattleArena.Infrastructure/BattleArena.Infrastructure.csproj" />
   <Project Path="BattleArena.ServiceDefaults\BattleArena.ServiceDefaults.csproj" />
   <Project Path="BattleArena.AppHost\BattleArena.AppHost.csproj" />
 </Solution>

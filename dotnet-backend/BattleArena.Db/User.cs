@@ -26,6 +26,9 @@ public class User : AuditBase
     [Column("phone_number", TypeName = "varchar(32)")]
     public string? PhoneNumber { get; set; }
 
+    [Column("amount")]
+    public int? Amount { get; set; }
+
     public ICollection<TeamPlayer> TeamPlayers { get; } = new List<TeamPlayer>();
 
     public ICollection<OrganizationHost> OrganizationHosts { get; } = new List<OrganizationHost>();
