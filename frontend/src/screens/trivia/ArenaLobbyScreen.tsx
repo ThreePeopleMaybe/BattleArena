@@ -1,38 +1,50 @@
-import React, { useState, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useCallback, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+  Alert,
   Modal,
   Pressable,
-  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
-import { RootStackParamList } from '../../navigation/types';
-import { getArenaById, updateArenaWager, type Arena } from '../../storage/arenaStorage';
-import { getWalletBalance } from '../../storage/walletStorage';
 import { useAuth } from '../../context/AuthContext';
+import { RootStackParamList } from '../../navigation/types';
+import {
+  deleteArena,
+  getArenaById,
+  leaveArena,
+  updateArenaWager,
+  type Arena,
+} from '../../storage/arenaStorage';
+import { getWalletBalance } from '../../storage/walletStorage';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 const WAGER_PRESETS = [0, 1, 5, 10, 25];
+
+function emailsMatch(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ArenaLobby'>;
   route: RouteProp<RootStackParamList, 'ArenaLobby'>;
 };
+
 export default function ArenaLobbyScreen({ navigation, route }: Props) {
-  const { arenaId } = route.params;
-  const { isLoggedIn } = useAuth();
-  
+  const { arenaId, isHost: isHostParam } = route.params;
+  const { isLoggedIn, user } = useAuth();
+
   const [arena, setArena] = useState<Arena | null>(null);
   const [wagerModalVisible, setWagerModalVisible] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+
   const loadArena = useCallback(async () => {
     const a = await getArenaById(arenaId);
     setArena(a ?? null);
@@ -46,14 +58,7 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
 
   const openWagerModal = useCallback(() => {
     if (!isLoggedIn) {
-      Alert.alert(
-        'Log in to wager',
-        'You need to log in to set a wager amount for the arena.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Log in', onPress: () => navigation.navigate('Login') },
-        ]
-      );
+      navigation.navigate('Login');
       return;
     }
     getWalletBalance().then(setWalletBalance);
@@ -77,8 +82,62 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
     );
   }
 
-  return (
-    <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
+  const userId = user?.email;
+  const isHostEffective = 
+    Boolean(userId && isLoggedIn) &&
+    (isHostParam === true || emailsMatch(arena.createdByUserId, userId));
+
+  const isMemberEffective = Boolean(
+    userId && arena.members.some((m) => emailsMatch(m.id, userId))
+  );
+
+  const canDeleteArena = isLoggedIn && isHostEffective;
+  const canLeaveArena = isLoggedIn && isMemberEffective && !isHostEffective;
+
+  const confirmDeleteArena = () => {
+    Alert.alert(
+      'Delete arena?',
+      'This removes the arena for everyone. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteArena(arenaId);
+            navigation.navigate('ArenaHome');
+          },
+        },
+      ]
+    );
+  };
+
+  const confirmLeaveArena = () => {
+    Alert.alert(
+      'Leave arena?',
+      'You will be removed from this arena. You can rejoin with the code later.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            if (userId) await leaveArena(arenaId, userId);
+            navigation.navigate('ArenaHome');
+          },
+        },
+      ]
+    );
+  };
+
+return (
+  <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
+    <ScrollView 
+      style={styles.mainScroll}
+      contentContainerStyle={styles.mainScrollContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.joinCodeBox}>
         <Text style={styles.joinCodeLabel}>Arena join code</Text>
         <Text style={styles.joinCodeValue}>{arena.joinCode}</Text>
@@ -88,7 +147,7 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
       <View style={styles.wagerDisplayRow}>
         <View style={styles.wagerSpacer} />
         <View style={styles.wagerCenterSection}>
-          <Text style={styles.wagerLabel}>Wager</Text>
+          <Text style={styles.wagerLabel}>{!isLoggedIn ? '' : 'Wager'}</Text>
           <TouchableOpacity
             style={[
               styles.wagerChip,
@@ -112,78 +171,100 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
         </View>
         <View style={styles.wagerSpacer} />
       </View>
-
-      {/* Wager Selection Modal */}
-      <Modal
-        visible={wagerModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setWagerModalVisible(false)}
-      >
-        <Pressable style={globalStyles.modalOverlay} onPress={() => setWagerModalVisible(false)}>
-          <Pressable style={globalStyles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={globalStyles.modalTitle}>Select wager (for everyone)</Text>
-            <View style={styles.modalChips}>
-              {WAGER_PRESETS.map((amount) => {
-                const exceedsBalance = amount > 0 && walletBalance !== null && amount > walletBalance;
-                return (
-                  <TouchableOpacity
-                    key={amount}
-                    style={[
-                      styles.wagerChip,
-                      arena.wagerAmount === amount && styles.wagerChipSelected,
-                      exceedsBalance && styles.wagerChipDisabled,
-                    ]}
-                    onPress={() => !exceedsBalance && handleSetWager(amount)}
-                    activeOpacity={0.8}
-                    disabled={exceedsBalance}
-                  >
-                    <Text
-                      style={[
-                        styles.wagerChipText,
-                        arena.wagerAmount === amount && styles.wagerChipTextSelected,
-                        exceedsBalance && styles.wagerChipTextDisabled,
-                      ]}
-                    >
-                      {amount === 0 ? 'None' : `$${amount}`}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <TouchableOpacity
-              style={globalStyles.primaryButton}
-              onPress={() => setWagerModalVisible(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.primaryButtonText}>Done</Text>
+      {(canDeleteArena || canLeaveArena) && (
+        <View style={styles.dangerRow}>
+          {canDeleteArena && (
+            <TouchableOpacity style={styles.dangerButton} onPress={confirmDeleteArena} activeOpacity={0.8}>
+              <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
+              <Text style={styles.dangerButtonText}>Delete arena</Text>
             </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          )}
+          {canLeaveArena && (
+            <TouchableOpacity style={styles.dangerButton} onPress={confirmLeaveArena} activeOpacity={0.8}>
+              <Ionicons name="exit-outline" size={18} color={theme.colors.textMuted} />
+              <Text style={styles.leaveButtonText}>Leave arena</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       <TouchableOpacity
-        style={[globalStyles.primaryButton, styles.startButton]}
-        onPress={() => navigation.navigate('Topics', { mode: 'battle', fromArena: true, wagerAmount: arena.wagerAmount, arenaId: arena.id })}
+        style={[globalStyles.primaryButton, styles.startButton, arena.members.length === 0 && styles.startButtonDisabled]}
+        onPress={() => arena.members.length > 0 && navigation.navigate('Topics', { mode: 'battle', fromArena: true, wagerAmount: arena.wagerAmount, arenaId: arena.id })}
         activeOpacity={0.8}
+        disabled={arena.members.length === 0}
       >
-        <Text style={globalStyles.primaryButtonText}>Open Arena</Text>
+        <Text style={[globalStyles.primaryButtonText, arena.members.length === 0 && styles.startButtonTextDisabled]}>Open Arena</Text>
       </TouchableOpacity>
 
       <Text style={styles.membersLabel}>Players ({arena.members.length})</Text>
-      <ScrollView style={styles.memberList} contentContainerStyle={styles.memberListContent}>
+      <View style={styles.memberList}>
         {arena.members.map((m) => (
           <View key={m.id} style={styles.memberRow}>
             <Ionicons name="person" size={20} color={theme.colors.primary} />
             <Text style={styles.memberName}>{m.name}</Text>
           </View>
         ))}
-      </ScrollView>
-    </View>
-  );
+      </View>
+</ScrollView>
+<Modal
+      visible={wagerModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setWagerModalVisible(false)}
+    >
+      <Pressable style={globalStyles.modalOverlay} onPress={() => setWagerModalVisible(false)}>
+        <Pressable style={globalStyles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <Text style={globalStyles.modalTitle}>Select wager (for everyone)</Text>
+          <View style={styles.modalChips}>
+            {WAGER_PRESETS.map((amount) => {
+              const exceedsBalance = amount > 0 && walletBalance !== null && amount > walletBalance;
+              return (
+                <TouchableOpacity
+                  key={amount}
+                  style={[
+                    styles.wagerChip,
+                    arena.wagerAmount === amount && styles.wagerChipSelected,
+                    exceedsBalance && styles.wagerChipDisabled,
+                  ]}
+                  onPress={() => !exceedsBalance && handleSetWager(amount)}
+                  activeOpacity={0.8}
+                  disabled={exceedsBalance}
+                >
+                  <Text
+                    style={[
+                      styles.wagerChipText,
+                      arena.wagerAmount === amount && styles.wagerChipTextSelected,
+                      exceedsBalance && styles.wagerChipTextDisabled,
+                    ]}
+                  >
+                    {amount === 0 ? 'None' : `$${amount}`}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            onPress={() => setWagerModalVisible(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={globalStyles.primaryButtonText}>Done</Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
+  mainScroll:{
+    flex: 1,
+  },
+  mainScrollContent: {
+    paddingBottom: theme.spacing.lg,
+  },
   loading: {
     fontSize: theme.fontSize.md,
     color: theme.colors.textMuted,
@@ -298,6 +379,41 @@ const styles = StyleSheet.create({
   startButton: {
     marginBottom: theme.spacing.lg,
   },
+  startButtonDisabled: {
+    opacity: 0.5,
+  },
+  startButtonTextDisabled: {
+    color: theme.colors.textMuted,
+  },
+  dangerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 2,
+    borderColor: theme.colors.surfaceLight,
+    backgroundColor: theme.colors.surface,
+  },
+  dangerButtonText: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+    color: theme.colors.error,
+  },
+  leaveButtonText: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+  },
   membersLabel: {
     fontSize: theme.fontSize.sm,
     fontWeight: '600',
@@ -305,11 +421,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   memberList: {
-    maxHeight: 200,
     marginBottom: theme.spacing.lg,
-  },
-  memberListContent: {
-    paddingBottom: theme.spacing.md,
   },
   memberRow: {
     flexDirection: 'row',

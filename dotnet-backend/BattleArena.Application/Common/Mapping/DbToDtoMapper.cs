@@ -1,5 +1,6 @@
 using AutoMapper;
 using BattleArena.Application.Common.Interfaces;
+using BattleArena.Application.TriviaGames.Queries;
 using BattleArena.Db;
 using BattleArena.Domain.Models;
 
@@ -15,5 +16,6 @@ public sealed class DbToDtoMapper : Profile
         CreateMap<QuestionTopicCategory, QuestionTopicCategoryDto>();
         CreateMap<Question, QuestionDto>();
         CreateMap<QuestionChoice, QuestionChoiceDto>();
+        CreateMap<ActiveTriviaGameData, ActiveTriviaGameDto>();
     }
 }

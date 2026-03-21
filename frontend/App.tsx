@@ -1,27 +1,44 @@
-import React from 'react';
-import { View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
-import { AuthProvider } from './src/context/AuthContext';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar';
+import React from 'react';
+import { TouchableOpacity, View } from 'react-native';
+import { AuthProvider } from './src/context/AuthContext';
 import { RootStackParamList } from './src/navigation/types';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
-import SignUpScreen from './src/screens/SignUpScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import TeamsScreen from './src/screens/TeamsScreen';
-import CreateTeamScreen from './src/screens/CreateTeamScreen';
-import SelectOpponentScreen from './src/screens/SelectOpponentScreen';
 import MatchingOpponentScreen from './src/screens/MatchingOpponentScreen';
-import TopicsScreen from './src/screens/trivia/TopicsScreen';
-import QuizScreen from './src/screens/trivia/QuizScreen';
-import BattleScreen from './src/screens/trivia/BattleScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import SelectOpponentScreen from './src/screens/SelectOpponentScreen';
+import SignUpScreen from './src/screens/SignUpScreen';
+import TeamsScreen from './src/screens/TeamsScreen';
+import ArenaHomeScreen from './src/screens/trivia/ArenaHomeScreen';
+import ArenaLobbyScreen from './src/screens/trivia/ArenaLobbyScreen';
+import ArenaResultScreen from './src/screens/trivia/ArenaResultScreen';
 import BattleResultScreen from './src/screens/trivia/BattleResultScreen';
+import BattleScreen from './src/screens/trivia/BattleScreen';
+import ChallengeScreen from './src/screens/trivia/ChallengeScreen';
+import JoinArenaScreen from './src/screens/trivia/JoinArenaScreen';
+import QuizScreen from './src/screens/trivia/QuizScreen';
+import TopicsScreen from './src/screens/trivia/TopicsScreen';
+import WaitingForPlayersScreen from './src/screens/trivia/WaitingForPlayersScreen';
 import { theme } from './src/theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const noBackButton = { headerLeft: () => <View /> };
+
+const homeButtonHeader = ({ navigation }: { navigation: { navigate: (name: string) => void } }) => ({
+  headerLeft: () => (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('Home')}
+      style={{ padding: 8, marginLeft: 4 }}
+    >
+      <Ionicons name="home-outline" size={24} color={theme.colors.text} />
+    </TouchableOpacity>
+  ),
+});
 
 export default function App() {
   return (
@@ -44,17 +61,30 @@ export default function App() {
           <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: 'Sign up', ...noBackButton }} />
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
           <Stack.Screen name="Teams" component={TeamsScreen} options={{ title: 'My teams' }} />
-          <Stack.Screen 
-            name="CreateTeam" 
-            component={CreateTeamScreen} 
-            options={({ route }) => ({ title: route.params?.teamId ? 'Edit team' : 'Create team' })} 
+          <Stack.Screen
+            name="SelectOpponent"
+            component={SelectOpponentScreen}
+            options={(opts) => ({ title: 'Battle', ...homeButtonHeader(opts) })}
           />
-          <Stack.Screen name="SelectOpponent" component={SelectOpponentScreen} options={{ title: 'Battle' }} />
           <Stack.Screen name="MatchingOpponent" component={MatchingOpponentScreen} options={{ title: 'Finding opponent', ...noBackButton }} />
           <Stack.Screen name="Topics" component={TopicsScreen} options={{ title: 'Topics', ...noBackButton }} />
           <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz', ...noBackButton }} />
           <Stack.Screen name="Battle" component={BattleScreen} options={{ title: 'Battle', ...noBackButton }} />
           <Stack.Screen name="BattleResult" component={BattleResultScreen} options={{ title: 'Results', ...noBackButton }} />
+          <Stack.Screen
+            name="Challenge"
+            component={ChallengeScreen}
+            options={(opts) => ({ title: 'Challenge', ...homeButtonHeader(opts) })}
+          />
+          <Stack.Screen name="ArenaHome" component={ArenaHomeScreen} options={{ title: 'Arena' }} />
+          <Stack.Screen name="JoinArena" component={JoinArenaScreen} options={{ title: 'Join Arena' }} />
+          <Stack.Screen
+            name="ArenaLobby"
+            component={ArenaLobbyScreen}
+            options={(opts) => ({ title: 'Arena', ...homeButtonHeader(opts) })}
+          />
+          <Stack.Screen name="WaitingForPlayers" component={WaitingForPlayersScreen} options={{ title: 'Results', ...noBackButton }} />
+          <Stack.Screen name="ArenaResult" component={ArenaResultScreen} options={{ title: 'Arena Results', ...noBackButton }} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>

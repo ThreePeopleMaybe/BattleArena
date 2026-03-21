@@ -1,17 +1,17 @@
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
-import { RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
+import { RootStackParamList } from '../../navigation/types';
 import { joinArena } from '../../storage/arenaStorage';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'JoinArena'>;
@@ -55,16 +55,6 @@ export default function JoinArenaScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
-      {!isLoggedIn && (
-        <TouchableOpacity
-          style={[globalStyles.secondaryButton, styles.loginPrompt]}
-          onPress={() => navigation.navigate('Login')}
-          activeOpacity={0.8}
-        >
-          <Text style={globalStyles.secondaryButtonText}>Log in to join</Text>
-        </TouchableOpacity>
-      )}
-
       <Text style={styles.label}>Arena code</Text>
       <TextInput
         style={globalStyles.input}

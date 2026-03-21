@@ -1,4 +1,8 @@
-using Projects;
+Environment.SetEnvironmentVariable("ASPIRE_CONTAINER_RUNTIME", "podman");
+
+Environment.SetEnvironmentVariable("NO_PROXY", "localhost,127.0.0.1,::1");
+Environment.SetEnvironmentVariable("HTTP_PROXY", "http://gmdvproxy.acml.com:8080");
+Environment.SetEnvironmentVariable("HTTPS_PROXY", "http://gmdvproxy.acml.com:8080");
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -10,20 +14,20 @@ if (builder.ExecutionContext.IsRunMode)
 {
     // Data volumes don't work on ACA for Postgres so only add when running
     postgres.WithDataVolume();
-}
+};
 
 var db = postgres.AddDatabase("battlearena");
 
-var dbManager = builder.AddProject<BattleArena_DbManager>("battlearenamanager")
+var dbManager = builder.AddProject<Projects.BattleArena_DbManager>("battlearenamanager")
     .WithReference(db)
     .WaitFor(db)
-    .WithHttpHealthCheck("/health")
-    .WithHttpCommand("/reset-db", "Reset Database", commandOptions: new HttpCommandOptions { IconName = "DatabaseLightning" });
+    .WithHttpHealthCheck("/health");
 
-builder.AddProject<BattleArena_Api>("battlearena-api")
+builder.AddProject<Projects.BattleArena_Api>("battlearena-api")
     .WithReference(db)
+    .WithReference(dbManager)
     .WaitFor(dbManager)
-    //.WithExternalHttpEndpoints()
+    .WithExternalHttpEndpoints()
     //.WithUrlForEndpoint("https", url => url.DisplayText = "Battle Arena API (HTTPS)")
     //.WithUrlForEndpoint("http", url => url.DisplayText = "Battle Arena API (HTTP)")
     .WithHttpHealthCheck("/health");

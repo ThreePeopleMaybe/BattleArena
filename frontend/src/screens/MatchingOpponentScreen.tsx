@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RootStackParamList } from '../navigation/types';
-import { theme } from '../theme';
 import { globalStyles } from '../styles/globalStyles';
+import { theme } from '../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'MatchingOpponent'>;
@@ -20,7 +20,7 @@ function pickRandom<T>(arr: T[]): T {
 }
 
 export default function MatchingOpponentScreen({ navigation, route }: Props) {
-  const { opponentNames, wagerAmount, startInWaitingPhase } = route.params;
+  const { opponentNames, wagerAmount, startInWaitingPhase, fromChallenge } = route.params;
   const [currentOpponent, setCurrentOpponent] = useState<string>(() => 
     opponentNames.length > 0 ? (startInWaitingPhase ? opponentNames[0] : pickRandom(opponentNames)) : ''
   );
@@ -84,7 +84,7 @@ export default function MatchingOpponentScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (phase !== 'waitingForOpponent') return;
     const timer = setTimeout(() => {
-      navigation.replace('Topics', { mode: 'battle', opponentName: currentOpponent, wagerAmount });
+      navigation.replace('Topics', { mode: 'battle', opponentName: currentOpponent, wagerAmount, fromChallenge });
     }, OPPONENT_ACCEPT_SIMULATED_MS);
     return () => clearTimeout(timer);
   }, [phase, currentOpponent, wagerAmount, navigation]);

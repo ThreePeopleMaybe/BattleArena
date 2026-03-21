@@ -30,6 +30,11 @@ else
 
 app.MapUserApi();
 app.MapPlayerApi();
+app.MapTriviaGameApi();
+app.MapArenaApi();
+app.MapGameApi();
+app.MapQuestionApi();
+app.MapQuestionTopicApi();
 app.MapDefaultEndpoints();
 
 app.Run();

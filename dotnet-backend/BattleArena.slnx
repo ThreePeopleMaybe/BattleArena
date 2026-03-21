@@ -7,12 +7,14 @@
     <File Path="global.json" />
     <File Path=".editorconfig" />
   </Folder>
-  <Folder Name="/src/" />
-  <Project Path="BattleArena.Api\BattleArena.Api.csproj" />
-  <Project Path="BattleArena.Application/BattleArena.Application.csproj" />
-  <Project Path="BattleArena.DbManager\BattleArena.DbManager.csproj" />
-  <Project Path="BattleArena.Db\BattleArena.Db.csproj" />
-  <Project Path="BattleArena.Domain/BattleArena.Domain.csproj" />
-  <Project Path="BattleArena.Extensions/BattleArena.Extensions.csproj" />
-  <Project Path="BattleArena.Infrastructure/BattleArena.Infrastructure.csproj" />
+  <Folder Name="/src/">
+    <Project Path="BattleArena.Api\BattleArena.Api.csproj" />
+    <Project Path="BattleArena.Application/BattleArena.Application.csproj" />
+    <Project Path="BattleArena.DbManager\BattleArena.DbManager.csproj" />
+    <Project Path="BattleArena.Db\BattleArena.Db.csproj" />
+    <Project Path="BattleArena.Domain/BattleArena.Domain.csproj" />
+    <Project Path="BattleArena.Extensions/BattleArena.Extensions.csproj" />
+    <Project Path="BattleArena.Infrastructure/BattleArena.Infrastructure.csproj" />
+    <Project Path="BattleArena.Shared/BattleArena.Shared.csproj" />
+  </Folder>
 </Solution>

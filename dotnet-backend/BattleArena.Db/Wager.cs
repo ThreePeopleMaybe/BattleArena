@@ -2,8 +2,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BattleArena.Db;
 
+[Table("wager")]
 public class Wager
 {
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Column("id", Order = 0)]
+    public long Id { get; set; }
+
     [Column("user_id")]
     public long UserId { get; set; }
 

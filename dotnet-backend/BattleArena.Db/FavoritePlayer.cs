@@ -5,7 +5,8 @@ namespace BattleArena.Db;
 [Table("favorite_players")]
 public class FavoritePlayer : AuditBase
 {
-    [Column("id", Order = 1)]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Column("id", Order = 0)]
     public int Id { get; set; }
 
     [Column("user_id")]

@@ -1,33 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../theme';
-import { globalStyles } from '../styles/globalStyles';
-import { RootStackParamList } from '../navigation/types';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { createArena } from '../storage/arenaStorage';
+import { RootStackParamList } from '../navigation/types';
+import { globalStyles } from '../styles/globalStyles';
+import { theme } from '../theme';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> };
 
 export default function HomeScreen({ navigation }: Props) {
   const { isLoggedIn } = useAuth();
-  const [creatingArena, setCreatingArena] = useState(false);
-
-  const handleCreateArena = async () => {
-    setCreatingArena(true);
-    try {
-      const arena = await createArena();
-      navigation.navigate('ArenaLobby', { arenaId: arena.id, isHost: true });
-    } finally {
-      setCreatingArena(false);
-    }
-  };
 
   return (
     <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
       <View style={styles.headerRow}>
-        <Text style={globalStyles.screenTitle}>Trivia Battle</Text>
+        <Text style={globalStyles.screenTitle}></Text>
         {isLoggedIn ? (
           <TouchableOpacity
             style={styles.profileButton}
@@ -38,8 +26,6 @@ export default function HomeScreen({ navigation }: Props) {
           </TouchableOpacity>
         ) : null}
       </View>
-      
-      <Text style={globalStyles.screenSubtitle}>Pick a mode. Prove you're the best.</Text>
 
       {!isLoggedIn && (
         <View style={styles.authRow}>
@@ -53,8 +39,18 @@ export default function HomeScreen({ navigation }: Props) {
       )}
 
       <TouchableOpacity
+        style={[styles.card, styles.challengeCard]}
+        onPress={() => navigation.navigate('Challenge')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.cardIcon}>🏆</Text>
+        <Text style={styles.cardTitle}>Challenge</Text>
+        <Text style={styles.cardDesc}>View past quizzes and challenge opponents by category.</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[styles.card, styles.battleCard]}
-        onPress={() => navigation.navigate('SelectOpponent')}
+        onPress={() => navigation.navigate('SelectOpponent', { fromChallenge: false })}
         activeOpacity={0.8}
       >
         <Text style={styles.cardIcon}>⚔️</Text>
@@ -63,28 +59,13 @@ export default function HomeScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.card, styles.arenaCard, creatingArena && styles.cardDisabled]}
-        onPress={handleCreateArena}
-        activeOpacity={0.8}
-        disabled={creatingArena}
-      >
-        {creatingArena ? (
-          <ActivityIndicator size="small" color={theme.colors.primary} style={styles.creatingSpinner} />
-        ) : (
-          <Text style={styles.cardIcon}>🏟️</Text>
-        )}
-        <Text style={styles.cardTitle}>Create Arena</Text>
-        <Text style={styles.cardDesc}>Host a multiplayer session. Get a code and share it for players to join.</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.card, styles.joinArenaCard]}
-        onPress={() => navigation.navigate('JoinArena')}
+        style={[styles.card, styles.arenaCard]}
+        onPress={() => navigation.navigate('ArenaHome')}
         activeOpacity={0.8}
       >
-        <Text style={styles.cardIcon}>🔗</Text>
-        <Text style={styles.cardTitle}>Join Arena</Text>
-        <Text style={styles.cardDesc}>Enter a code to join an arena and play against others.</Text>
+        <Text style={styles.cardIcon}>🏟️</Text>
+        <Text style={styles.cardTitle}>Arena</Text>
+        <Text style={styles.cardDesc}>Create or join arenas. View your arenas and host multiplayer sessions.</Text>
       </TouchableOpacity>
     </View>
   );
@@ -113,12 +94,6 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
   },
-  cardDisabled: {
-    opacity: 0.7,
-  },
-  creatingSpinner: {
-    marginBottom: theme.spacing.sm,
-  },
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
@@ -135,8 +110,8 @@ const styles = StyleSheet.create({
   arenaCard: {
     borderColor: theme.colors.success,
   },
-  joinArenaCard: {
-    borderColor: theme.colors.primaryLight,
+  challengeCard: {
+    borderColor: theme.colors.accent,
   },
   teamCard: {
     borderColor: theme.colors.surfaceLight,

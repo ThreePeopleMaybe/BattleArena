@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getQuestionsForTopic, getQuestionsFromTopics } from '../../data/questions';
-import { Question, QuizQuestionResult } from '../../types';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
 import { RootStackParamList } from '../../navigation/types';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
+import { Question, QuizQuestionResult } from '../../types';
 
 const QUIZ_TIME_LIMIT_MS = 100 * 1000; // 100 seconds
 
@@ -22,7 +22,7 @@ function generateOpponentScore(userCorrect: number, total: number): { correct: n
 }
 
 export default function QuizScreen({ navigation, route }: Props) {
-  const { topicId, opponentTopicId, battleMode, opponentName, wagerAmount, arenaId } = route.params;
+  const { topicId, opponentTopicId, battleMode, opponentName, wagerAmount, arenaId, fromChallenge } = route.params;
   
   const [questions] = useState<Question[]>(() => 
     opponentTopicId
@@ -73,6 +73,7 @@ export default function QuizScreen({ navigation, route }: Props) {
           navigation.replace('WaitingForPlayers', {
             mode: 'arena',
             arenaId,
+            topicId,
             userCorrect,
             userTimeMs: timeMs,
             questionCount: total,
@@ -85,8 +86,7 @@ export default function QuizScreen({ navigation, route }: Props) {
         opponentTimeMs = opp.timeMs;
         name = opponentName;
         
-        navigation.replace('WaitingForPlayers', {
-          mode: 'battle',
+        navigation.replace('BattleResult', {
           topicId,
           userCorrect,
           userTimeMs: timeMs,
@@ -95,6 +95,7 @@ export default function QuizScreen({ navigation, route }: Props) {
           opponentName: name,
           questionResults: finalResults,
           wagerAmount,
+          fromChallenge
         });
         return;
       }
@@ -116,12 +117,12 @@ export default function QuizScreen({ navigation, route }: Props) {
     setCurrentIndex((i) => i + 1);
     setSelectedIndex(null);
     setAnswered(false);
-  }, [isLast, startTime, navigation, topicId, selectedIndex, question, battleMode, opponentName, questions.length, questionResults, wagerAmount, arenaId]);
+  }, [isLast, startTime, navigation, topicId, selectedIndex, question, battleMode, opponentName, questions.length, questionResults, wagerAmount, arenaId, fromChallenge]);
 
   // Auto-advance after any answer
   useEffect(() => {
     if (!answered || selectedIndex === null) return;
-    const timeout = setTimeout(goNext, 800); // Small delay to show selection
+    const timeout = setTimeout(goNext, 100); // Small delay to show selection
     return () => clearTimeout(timeout);
   }, [answered, selectedIndex, goNext]);
 
@@ -147,6 +148,7 @@ export default function QuizScreen({ navigation, route }: Props) {
         navigation.replace('WaitingForPlayers', {
           mode: 'arena',
           arenaId,
+          topicId,
           userCorrect,
           userTimeMs: timeMs,
           questionCount: questions.length,
@@ -159,8 +161,7 @@ export default function QuizScreen({ navigation, route }: Props) {
       opponentTimeMs = opp.timeMs;
       name = opponentName;
 
-      navigation.replace('WaitingForPlayers', {
-        mode: 'battle',
+      navigation.replace('BattleResult', {
         topicId,
         userCorrect,
         userTimeMs: timeMs,
@@ -169,6 +170,7 @@ export default function QuizScreen({ navigation, route }: Props) {
         opponentName: name,
         questionResults: fullResults,
         wagerAmount,
+        fromChallenge
       });
       return;
     }
@@ -182,8 +184,9 @@ export default function QuizScreen({ navigation, route }: Props) {
       opponentName: name,
       questionResults: fullResults,
       wagerAmount,
+      fromChallenge
     });
-  }, [elapsed, currentIndex, questionResults, questions, battleMode, opponentName, navigation, topicId, wagerAmount, arenaId]);
+  }, [elapsed, currentIndex, questionResults, questions, battleMode, opponentName, navigation, topicId, wagerAmount, arenaId, fromChallenge]);
 
   if (!question) {
     return (

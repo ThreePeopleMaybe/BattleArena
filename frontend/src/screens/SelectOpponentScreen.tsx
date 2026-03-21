@@ -1,29 +1,37 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  Alert,
   FlatList,
-  TextInput,
   Modal,
   Pressable,
-  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp, useFocusEffect } from '@react-navigation/native';
-import { theme } from '../theme';
-import { globalStyles } from '../styles/globalStyles';
-import { RootStackParamList } from '../navigation/types';
-import type { Opponent } from '../data/opponents';
 import { fetchOpponents } from '../api/opponents';
+import { useAuth } from '../context/AuthContext';
+import type { Opponent } from '../data/opponents';
+import { RootStackParamList } from '../navigation/types';
+import { getFavouriteOpponentIds, toggleFavouriteOpponent } from '../storage/favouritesStorage';
 import { getSavedWager, saveWager } from '../storage/wagerStorage';
 import { getWalletBalance } from '../storage/walletStorage';
-import { getFavouriteOpponentIds, toggleFavouriteOpponent } from '../storage/favouritesStorage';
-import { useAuth } from '../context/AuthContext';
+import { globalStyles } from '../styles/globalStyles';
+import { theme } from '../theme';
 
-const WAGER_OPTIONS = [0, 1, 5, 10, 25];
+const ALL_WAGERS = -1;
+const WAGER_OPTIONS: { value: number; label: string }[] = [
+  { value: ALL_WAGERS, label: 'All wagers' },
+  { value: 0, label: 'None' },
+  { value: 1, label: '$1' },
+  { value: 5, label: '$5' },
+  { value: 10, label: '$10' },
+  { value: 25, label: '$25' },
+];
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'SelectOpponent'>;
@@ -31,18 +39,19 @@ type Props = {
 };
 
 function formatRecord(wins: number, losses: number): string {
-  return `${wins}W-{losses}L`;
+  return `${wins}W-${losses}L`;
 }
 
 export default function SelectOpponentScreen({ navigation, route }: Props) {
   const { isLoggedIn } = useAuth();
   const battleAgainOpponentName = route.params?.battleAgainOpponentName;
+  const fromChallenge = route.params?.fromChallenge ?? false;
   const [opponents, setOpponents] = useState<Opponent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [wagerAmount, setWagerAmount] = useState(0);
+  const [wagerAmount, setWagerAmount] = useState(ALL_WAGERS);
   const [wagerLoaded, setWagerLoaded] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -67,7 +76,7 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     getSavedWager().then((saved) => {
-      setWagerAmount(saved);
+      setWagerAmount(saved >= -1 ? saved : 0);
       setWagerLoaded(true);
     });
   }, []);
@@ -88,10 +97,15 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
   };
 
   const effectiveWager = useMemo(() => {
-    if (!isLoggedIn || wagerAmount <= 0) return 0;
+    if (!isLoggedIn || wagerAmount <= 0 || wagerAmount === ALL_WAGERS) return 0;
     if (walletBalance !== null && walletBalance < wagerAmount) return 0;
     return wagerAmount;
   }, [isLoggedIn, wagerAmount, walletBalance]);
+
+  const wagerDisplayLabel = useMemo(() => {
+    if (wagerAmount === ALL_WAGERS) return 'All wagers';
+    return wagerAmount === 0 ? 'None' : `$${wagerAmount}`;
+  }, [wagerAmount]);
 
   const filtered = useMemo(() => {
     const favourites = opponents.filter((o) => favouriteOpponentIds.includes(o.id));
@@ -121,11 +135,11 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
   };
 
   const handleSelect = (name: string) => {
-    const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : undefined;
     navigation.navigate('Topics', {
       mode: 'battle',
       opponentName: name,
-      wagerAmount: wager,
+      wagerAmount: effectiveWager,
+      fromChallenge,
     });
   };
 
@@ -137,6 +151,7 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
     navigation.navigate('MatchingOpponent', {
       opponentNames: names,
       wagerAmount: wager,
+      fromChallenge,
     });
   };
 
@@ -166,7 +181,7 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
   const renderOpponentRow = useCallback(
     ({ item: opponent }: { item: Opponent }) => {
       const isFav = favouriteOpponentIds.includes(opponent.id);
-      const wagerLabel = opponent.wager !== null ? `$${opponent.wager}` : 'Any';
+      const wagerLabel = isLoggedIn ? (opponent.wager != null ? `$${opponent.wager}` : 'No wager') : '';
       return (
         <View style={styles.rowCard}>
           <TouchableOpacity
@@ -178,7 +193,7 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
               <Text style={styles.rowName}>{opponent.name}</Text>
               <Text style={styles.rowRecord}>{formatRecord(opponent.wins, opponent.losses)}</Text>
             </View>
-            <Text style={styles.rowWager}>{wagerLabel}</Text>
+            {isLoggedIn && <Text style={styles.rowWager}>{wagerLabel}</Text>}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.favButton}
@@ -194,7 +209,7 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
         </View>
       );
     },
-    [favouriteOpponentIds]
+    [favouriteOpponentIds, isLoggedIn]
   );
 
   const keyExtractor = useCallback((item: Opponent) => item.id, []);
@@ -212,7 +227,7 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
 
   return (
     <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
-      <Text style={globalStyles.screenTitle}>Choose opponent</Text>
+      <Text style={[globalStyles.screenTitle]}>Choose opponent</Text>
 
       {battleAgainOpponentName ? (
         <TouchableOpacity
@@ -223,23 +238,26 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
               opponentNames: [battleAgainOpponentName],
               wagerAmount: wager,
               startInWaitingPhase: true,
+              fromChallenge,
             });
           }}
           activeOpacity={0.8}
         >
-          <Text style={styles.battleAgainLabel}>Battle <Text style={styles.battleAgainName}>{battleAgainOpponentName}</Text> again</Text>
+          <Text style={styles.battleAgainLabel}>
+            Battle <Text style={styles.battleAgainName}>{battleAgainOpponentName}</Text> again
+          </Text>
         </TouchableOpacity>
       ) : null}
 
       <View style={styles.wagerDisplayRow}>
         <View style={styles.wagerSpacer} />
         <View style={styles.wagerCenterSection}>
-          <Text style={styles.wagerLabel}>Wager</Text>
+          <Text style={styles.wagerLabel}>{!isLoggedIn ? '' : 'Wager'}</Text>
           <TouchableOpacity
             style={[
               styles.wagerChip,
               styles.wagerChipDisplay,
-              isLoggedIn && effectiveWager > 0 && styles.wagerChipSelected,
+              isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipSelected,
               !isLoggedIn && styles.wagerChipDisabled,
             ]}
             onPress={openWagerModal}
@@ -248,14 +266,15 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
             <Text
               style={[
                 styles.wagerChipText,
-                isLoggedIn && effectiveWager > 0 && styles.wagerChipTextSelected,
+                isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipTextSelected,
                 !isLoggedIn && styles.wagerChipTextDisabled,
               ]}
             >
-              {!isLoggedIn ? 'Log in to wager' : wagerLoaded ? (effectiveWager === 0 ? 'None' : `$${effectiveWager}`) : '...'}
+              {!isLoggedIn ? 'Log in to wager' : wagerLoaded ? wagerDisplayLabel : '...'}
             </Text>
           </TouchableOpacity>
         </View>
+
         <View style={styles.wagerSpacer}>
           {isLoggedIn && (
             <View style={styles.balanceChip}>
@@ -268,17 +287,19 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      <View style={styles.autoPickRow}>
+      {/* Note: The Auto Pick row is commented out in your screenshot, 
+        but I've included it here for completeness. 
+      */}
+      {/* <View style={styles.autoPickRow}>
         <TouchableOpacity
           style={[globalStyles.smallButton, styles.autoPickButtonFlex]}
           onPress={handleAutoPick}
           activeOpacity={0.8}
         >
-          <Text style={[globalStyles.smallButtonText]}>
-            🎲 Auto pick opponent
-          </Text>
+          <Text style={[globalStyles.smallButtonText]}>🎲 Auto pick opponent</Text>
         </TouchableOpacity>
-      </View>
+      </View> 
+      */}
 
       <View style={styles.searchRow}>
         <TextInput
@@ -304,7 +325,11 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
       ) : error ? (
         <View style={styles.errorWrap}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={[globalStyles.smallButton, styles.retryButton]} onPress={loadOpponents} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[globalStyles.smallButton, styles.retryButton]}
+            onPress={loadOpponents}
+            activeOpacity={0.8}
+          >
             <Text style={globalStyles.smallButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -334,28 +359,28 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
           <Pressable style={globalStyles.modalContent} onPress={(e) => e.stopPropagation()}>
             <Text style={globalStyles.modalTitle}>Select wager amount</Text>
             <View style={styles.modalChips}>
-              {WAGER_OPTIONS.map((amount) => {
-                const exceedsBalance = amount > 0 && walletBalance !== null && amount > walletBalance;
+              {WAGER_OPTIONS.map((opt) => {
+                const exceedsBalance = opt.value > 0 && walletBalance !== null && opt.value > walletBalance;
                 return (
                   <TouchableOpacity
-                    key={amount}
+                    key={opt.value}
                     style={[
                       styles.wagerChip,
-                      wagerAmount === amount && styles.wagerChipSelected,
+                      wagerAmount === opt.value && styles.wagerChipSelected,
                       exceedsBalance && styles.wagerChipDisabled,
                     ]}
-                    onPress={() => !exceedsBalance && handleWagerSelect(amount)}
+                    onPress={() => !exceedsBalance && handleWagerSelect(opt.value)}
                     activeOpacity={0.8}
                     disabled={exceedsBalance}
                   >
                     <Text
                       style={[
                         styles.wagerChipText,
-                        wagerAmount === amount && styles.wagerChipTextSelected,
+                        wagerAmount === opt.value && styles.wagerChipTextSelected,
                         exceedsBalance && styles.wagerChipTextDisabled,
                       ]}
                     >
-                      {amount === 0 ? 'None' : `$${amount}`}
+                      {opt.label}
                     </Text>
                   </TouchableOpacity>
                 );
