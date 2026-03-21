@@ -6,7 +6,7 @@ export async function getSavedWager(): Promise<number> {
     const value = await AsyncStorage.getItem(WAGER_STORAGE_KEY);
     if (value !== null) {
       const num = parseInt(value, 10);
-      if (!Number.isNaN(num) && num >= 0) return num;
+      if (!Number.isNaN(num) && num >= -1) return num;
     }
   } catch (_) {}
   return 0;

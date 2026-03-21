@@ -1,11 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useRef } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RootStackParamList } from '../../navigation/types';
 import { addToWallet } from '../../storage/walletStorage';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'BattleResult'>;
@@ -20,7 +20,7 @@ function formatTime(ms: number): string {
 }
 
 export default function BattleResultScreen({ navigation, route }: Props) {
-  const { userCorrect, userTimeMs, opponentCorrect, opponentTimeMs, opponentName, questionResults, wagerAmount } = route.params;
+  const { userCorrect, userTimeMs, opponentCorrect, opponentTimeMs, opponentName, questionResults, wagerAmount, fromChallenge } = route.params;
   const isBattle = !!opponentName;
   const walletApplied = useRef(false);
 
@@ -92,21 +92,22 @@ export default function BattleResultScreen({ navigation, route }: Props) {
       )}
 
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={globalStyles.primaryButton}
-          onPress={() => {
-            if (isBattle) {
-              navigation.navigate('SelectOpponent', { battleAgainOpponentName: opponentName, wagerAmount });
-            } else {
-              navigation.navigate('Topics');
-            }
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={globalStyles.primaryButtonText}>
-            {isBattle ? 'Battle again' : 'Play again'}
-          </Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={globalStyles.primaryButton}
+        onPress={() => {
+          if (fromChallenge) {
+            navigation.navigate('Challenge');
+          } else {
+            navigation.navigate('SelectOpponent', { 
+              battleAgainOpponentName: opponentName, 
+              wagerAmount, 
+              fromChallenge: false 
+            });
+          }
+        }}
+        activeOpacity={0.8}>
+        <Text style={globalStyles.primaryButtonText}>Battle again</Text>
+      </TouchableOpacity>
 
         <TouchableOpacity
           style={globalStyles.secondaryButton}

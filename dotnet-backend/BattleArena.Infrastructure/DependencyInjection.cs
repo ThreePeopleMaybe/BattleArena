@@ -15,8 +15,13 @@ public static class DependencyInjection
     {
         services.AddScoped<IUserQueryRepository, UserQueryRepository>();
         services.AddScoped<IUserCommandRepository, UserCommandRepository>();
+        services.AddScoped<IArenaCommandRepository, ArenaCommandRepository>();
+        services.AddScoped<IGameCommandRepository, GameCommandRepository>();
+        services.AddScoped<ITriviaGameCommandRepository, TriviaGameCommandRepository>();
+        services.AddScoped<ITriviaGameQueryRepository, TriviaGameQueryRepository>();
         services.AddScoped<IQuestionTopicQueryRepository, QuestionTopicQueryRepository>();
         services.AddScoped<IQuestionQueryRepository, QuestionQueryRepository>();
+
         services.AddAutoMapper(cfg => cfg.AddProfile<DbToDtoMapper>());
 
         return services;

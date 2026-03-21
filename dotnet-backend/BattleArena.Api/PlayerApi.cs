@@ -11,10 +11,21 @@ public static class PlayerApi
     {
         var group = routes.MapGroup("/api/v1/players").WithTags("Player");
 
-        group.MapPost("active", UpsertActivePlayer).Produces(StatusCodes.Status204NoContent);
-        group.MapGet("active/{gameTypeId:int}/{userId:long}", MatchActivePlayersByGameTypeId).Produces<PlayerDto?>();
-        group.MapGet("favorites/{userId:int}", GetFavoritePlayers).Produces<List<PlayerDto>>();
-        group.MapGet("player/{userName}", GetPlayer).Produces<PlayerDto>().Produces(StatusCodes.Status404NotFound);
+        group.MapPost("active", UpsertActivePlayer)
+            .Produces(StatusCodes.Status204NoContent);
+
+        group.MapGet("active/{gameTypeId:int}/{userId:long}", MatchActivePlayersByGameTypeId)
+            .Produces<PlayerDto?>();
+
+        group.MapGet("matchactiveplayers/{gameTypeId:int}/{userId:long}", MatchActivePlayersByGameTypeId)
+            .Produces<PlayerDto?>();
+
+        group.MapGet("favorites/{userId:int}", GetFavoritePlayers)
+            .Produces<List<PlayerDto>>();
+
+        group.MapGet("player/{userName}", GetPlayer)
+            .Produces<PlayerDto?>()
+            .Produces(StatusCodes.Status404NotFound);
 
         return group;
     }

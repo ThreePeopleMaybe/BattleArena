@@ -1,4 +1,4 @@
-namespace BattleArena.Db;
+namespace BattleArena.Shared;
 
 public enum QuestionType
 {

@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TOPICS } from '../../data/topics';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
 import { RootStackParamList } from '../../navigation/types';
-import type { Topic } from '../../types';
 import { getFavouriteTopicIds, toggleFavouriteTopic } from '../../storage/favouritesStorage';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
+import type { Topic } from '../../types';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Topics'>;
@@ -26,6 +26,7 @@ export default function TopicsScreen({ navigation, route }: Props) {
   const wagerAmount = route.params?.wagerAmount;
   const fromArena = route.params?.fromArena === true;
   const arenaId = route.params?.arenaId;
+  const fromChallenge = route.params?.fromChallenge === true;
   const pickingOpponentTopic = isBattle && !!yourTopicId && !fromArena;
 
   const [search, setSearch] = useState('');
@@ -78,15 +79,16 @@ export default function TopicsScreen({ navigation, route }: Props) {
         opponentTopicId: topicId,
         opponentName: opponentName ?? 'Opponent',
         wagerAmount: wagerAmount ?? 0,
+        fromChallenge
       });
     } else {
-      // Battle mode: auto-select same topic for opponent
       navigation.navigate('Battle', {
         topicId,
         opponentTopicId: topicId,
         opponentName: opponentName ?? 'Opponent',
         wagerAmount: wagerAmount ?? 0,
         arenaId,
+        fromChallenge
       });
     }
   };

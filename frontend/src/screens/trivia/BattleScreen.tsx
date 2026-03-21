@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { RootStackParamList } from '../../navigation/types';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 const START_COUNTDOWN_SEC = 5;
 
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function BattleScreen({ navigation, route }: Props) {
-  const { topicId, opponentTopicId, opponentName, wagerAmount, arenaId } = route.params;
+  const { topicId, opponentTopicId, opponentName, wagerAmount, arenaId, fromChallenge } = route.params;
   const [countdown, setCountdown] = useState(START_COUNTDOWN_SEC);
   const started = useRef(false);
 
@@ -28,6 +28,7 @@ export default function BattleScreen({ navigation, route }: Props) {
       opponentName,
       wagerAmount: (wagerAmount ?? 0) > 0 ? wagerAmount : undefined,
       arenaId,
+      fromChallenge
     });
   };
 

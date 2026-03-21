@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
 import { getArenaById, type ArenaMember } from '../../storage/arenaStorage';
-import { useAuth } from '../../context/AuthContext';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ArenaResult'>;
@@ -40,7 +40,7 @@ interface ArenaPlayerResult {
 }
 
 export default function ArenaResultScreen({ navigation, route }: Props) {
-  const { arenaId, userCorrect, userTimeMs, questionCount } = route.params;
+  const { arenaId, topicId, userCorrect, userTimeMs, questionCount } = route.params;
   const { user } = useAuth();
   const currentUserId = user?.email ?? '';
 

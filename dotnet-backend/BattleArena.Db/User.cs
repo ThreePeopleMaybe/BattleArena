@@ -9,7 +9,7 @@ namespace BattleArena.Db;
 public class User : AuditBase
 {
     [Column("id", Order = 1)]
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     [Column("username", TypeName = "varchar(255)")]
     public required string Username { get; set; }
