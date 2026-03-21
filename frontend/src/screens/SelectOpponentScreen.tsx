@@ -39,7 +39,7 @@ type Props = {
 };
 
 function formatRecord(wins: number, losses: number): string {
-  return `${wins}W-${losses}L`;
+  return `${wins}W-{losses}L`;
 }
 
 export default function SelectOpponentScreen({ navigation, route }: Props) {
@@ -135,10 +135,11 @@ export default function SelectOpponentScreen({ navigation, route }: Props) {
   };
 
   const handleSelect = (name: string) => {
+    const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : undefined;
     navigation.navigate('Topics', {
       mode: 'battle',
       opponentName: name,
-      wagerAmount: effectiveWager,
+      wagerAmount: wager,
       fromChallenge,
     });
   };
