@@ -26,7 +26,7 @@ import TopicsScreen from './src/screens/trivia/TopicsScreen';
 import WaitingForPlayersScreen from './src/screens/trivia/WaitingForPlayersScreen';
 import { theme } from './src/theme';
 
-const queryCient = new QueryClient({
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1 },
     mutations: { retry: 0 },
@@ -50,7 +50,7 @@ const homeButtonHeader = ({ navigation }: { navigation: { navigate: (name: strin
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryCient}>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NavigationContainer>
           <StatusBar style="light" />
