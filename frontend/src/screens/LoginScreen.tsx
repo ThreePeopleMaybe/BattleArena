@@ -1,41 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../theme';
-import { globalStyles } from '../styles/globalStyles';
+import React, { useCallback } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { useLoginForm } from '../hooks/useLoginForm';
 import { RootStackParamList } from '../navigation/types';
-import { useAuth } from '../context/AuthContext';
+import { globalStyles } from '../styles/globalStyles';
+import { theme } from '../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;
 };
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export default function LoginScreen({ navigation }: Props) {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const handleLogin = async () => {
-    setError('');
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      setError('Please enter your email.');
-      return;
-    }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (!password) {
-      setError('Please enter your password.');
-      return;
-    }
-    await login(trimmedEmail, password);
-    navigation.navigate('Home');
-  };
+  const onLoggedIn = useCallback(() => navigation.navigate('Home'), [navigation]);
+  const { email, setEmail, password, setPassword, error, submit } = useLoginForm(onLoggedIn);
 
   return (
     <KeyboardAvoidingView
@@ -56,6 +33,7 @@ export default function LoginScreen({ navigation }: Props) {
         autoCorrect={false}
         keyboardType="email-address"
       />
+
       <TextInput
         style={globalStyles.input}
         placeholder="Password"
@@ -65,25 +43,25 @@ export default function LoginScreen({ navigation }: Props) {
         secureTextEntry
       />
 
-      <TouchableOpacity 
-        style={[globalStyles.primaryButton, styles.primaryButtonMargin]} 
-        onPress={handleLogin} 
+      <TouchableOpacity
+        style={[globalStyles.primaryButton, styles.primaryButtonMargin]}
+        onPress={submit}
         activeOpacity={0.8}
       >
         <Text style={globalStyles.primaryButtonText}>Log in</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[globalStyles.cancelButton, styles.cancelButtonMargin]} 
-        onPress={() => navigation.goBack()} 
+      <TouchableOpacity
+        style={[globalStyles.cancelButton, styles.cancelButtonMargin]}
+        onPress={() => navigation.goBack()}
         activeOpacity={0.8}
       >
         <Text style={globalStyles.cancelButtonText}>Cancel</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[globalStyles.linkButton, styles.linkButtonMargin]} 
-        onPress={() => navigation.navigate('SignUp')} 
+      <TouchableOpacity
+        style={[globalStyles.linkButton, styles.linkButtonMargin]}
+        onPress={() => navigation.navigate('SignUp')}
         activeOpacity={0.8}
       >
         <Text style={globalStyles.linkText}>Don't have an account? Sign up</Text>

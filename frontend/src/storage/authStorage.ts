@@ -5,6 +5,8 @@ const AUTH_STORAGE_KEY = '@trivia_battle_auth';
 export interface AuthUser {
   email: string;
   password?: string;
+  userId?: number;
+  username?: string;
 }
 
 export async function getSavedAuth(): Promise<AuthUser | null> {
