@@ -1,64 +1,36 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  TextInput, 
-  KeyboardAvoidingView, 
-  Platform 
-} from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../theme';
-import { globalStyles } from '../styles/globalStyles';
-import { RootStackParamList } from '../navigation/types';
+import React, { useCallback } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
+import type { UserDto } from '../api/users';
 import { useAuth } from '../context/AuthContext';
+import { useSignUpForm, type SignUpCredentials } from '../hooks/useSignUpForm';
+import { RootStackParamList } from '../navigation/types';
+import { globalStyles } from '../styles/globalStyles';
+import { theme } from '../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 };
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export default function SignUpScreen({ navigation }: Props) {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
 
-  const handleSignUp = async () => {
-    setError('');
-    const trimmedEmail = email.trim();
-
-    if (!trimmedEmail) {
-      setError('Please enter your email.');
-      return;
-    }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (!password) {
-      setError('Please enter a password.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    try {
-      await login(trimmedEmail, password);
+  const onSignedUp = useCallback(
+    async (created: UserDto, { email, password }: SignUpCredentials) => {
+      await login(email, password, { userId: created.id, username: created.username });
       navigation.navigate('Home');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create account.');
-    }
-  };
+    },
+    [login, navigation]
+  );
+
+  const { form, setField, error, isSubmitting, submit } = useSignUpForm(onSignedUp);
 
   return (
     <KeyboardAvoidingView
@@ -72,10 +44,38 @@ export default function SignUpScreen({ navigation }: Props) {
 
       <TextInput
         style={globalStyles.input}
+        placeholder="Username"
+        placeholderTextColor={theme.colors.textMuted}
+        value={form.username}
+        onChangeText={(v) => setField('username', v)}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+
+      <TextInput
+        style={globalStyles.input}
+        placeholder="First name"
+        placeholderTextColor={theme.colors.textMuted}
+        value={form.firstName}
+        onChangeText={(v) => setField('firstName', v)}
+        autoCapitalize="words"
+      />
+
+      <TextInput
+        style={globalStyles.input}
+        placeholder="Last name"
+        placeholderTextColor={theme.colors.textMuted}
+        value={form.lastName}
+        onChangeText={(v) => setField('lastName', v)}
+        autoCapitalize="words"
+      />
+
+      <TextInput
+        style={globalStyles.input}
         placeholder="Email"
         placeholderTextColor={theme.colors.textMuted}
-        value={email}
-        onChangeText={setEmail}
+        value={form.email}
+        onChangeText={(v) => setField('email', v)}
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="email-address"
@@ -83,10 +83,19 @@ export default function SignUpScreen({ navigation }: Props) {
 
       <TextInput
         style={globalStyles.input}
+        placeholder="Phone number"
+        placeholderTextColor={theme.colors.textMuted}
+        value={form.phone}
+        onChangeText={(v) => setField('phone', v)}
+        keyboardType="phone-pad"
+      />
+
+      <TextInput
+        style={globalStyles.input}
         placeholder="Password"
         placeholderTextColor={theme.colors.textMuted}
-        value={password}
-        onChangeText={setPassword}
+        value={form.password}
+        onChangeText={(v) => setField('password', v)}
         secureTextEntry
       />
 
@@ -94,23 +103,31 @@ export default function SignUpScreen({ navigation }: Props) {
         style={globalStyles.input}
         placeholder="Confirm password"
         placeholderTextColor={theme.colors.textMuted}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
+        value={form.confirmPassword}
+        onChangeText={(v) => setField('confirmPassword', v)}
         secureTextEntry
       />
 
-      <TouchableOpacity 
-        style={[globalStyles.primaryButton, styles.primaryButtonMargin]} 
-        onPress={handleSignUp} 
+      <TouchableOpacity
+        style={[
+          globalStyles.primaryButton,
+          styles.primaryButtonMargin,
+          isSubmitting && styles.buttonDisabled,
+        ]}
+        onPress={submit}
         activeOpacity={0.8}
+        disabled={isSubmitting}
       >
-        <Text style={globalStyles.primaryButtonText}>Sign up</Text>
+        <Text style={globalStyles.primaryButtonText}>
+          {isSubmitting ? 'Creating account...' : 'Sign up'}
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[globalStyles.cancelButton, styles.cancelButtonMargin]} 
-        onPress={() => navigation.goBack()} 
+      <TouchableOpacity
+        style={[globalStyles.cancelButton, styles.cancelButtonMargin]}
+        onPress={() => navigation.goBack()}
         activeOpacity={0.8}
+        disabled={isSubmitting}
       >
         <Text style={globalStyles.cancelButtonText}>Cancel</Text>
       </TouchableOpacity>
@@ -119,6 +136,7 @@ export default function SignUpScreen({ navigation }: Props) {
         style={[globalStyles.linkButton, styles.linkButtonMargin]}
         onPress={() => navigation.navigate('Login')}
         activeOpacity={0.8}
+        disabled={isSubmitting}
       >
         <Text style={globalStyles.linkText}>Already have an account? Log in</Text>
       </TouchableOpacity>
@@ -130,4 +148,5 @@ const styles = StyleSheet.create({
   primaryButtonMargin: { marginTop: theme.spacing.sm },
   cancelButtonMargin: { marginTop: theme.spacing.sm },
   linkButtonMargin: { marginTop: theme.spacing.xl },
+  buttonDisabled: { opacity: 0.6 },
 });

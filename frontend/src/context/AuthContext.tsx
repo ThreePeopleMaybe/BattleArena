@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getSavedAuth, saveAuth, clearAuth, AuthUser } from '../storage/authStorage';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { AuthUser, clearAuth, getSavedAuth, saveAuth } from '../storage/authStorage';
+
+type LoginProfile = { userId?: number; username?: string };
 
 type AuthContextType = {
   user: AuthUser | null;
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, profile?: LoginProfile) => Promise<void>;
   logout: () => Promise<void>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 };
@@ -22,10 +24,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, profile?: LoginProfile) => {
     const trimmed = email.trim();
     if (!trimmed) return;
-    const authUser: AuthUser = { email: trimmed, password };
+
+    const authUser: AuthUser = {
+      email: trimmed,
+      password,
+      ...(profile?.userId != null && { userId: profile.userId }),
+      ...(profile?.username != null && profile.username !== '' && { username: profile.username }),
+    };
+
     await saveAuth(authUser);
     setUser(authUser);
   }, []);
@@ -34,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
     if (user.password != null && user.password !== currentPassword) return false;
     if (newPassword.length < 6) return false;
-    
+
     const updated: AuthUser = { ...user, password: newPassword };
     await saveAuth(updated);
     setUser(updated);
