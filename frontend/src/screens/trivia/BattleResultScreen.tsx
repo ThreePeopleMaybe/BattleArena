@@ -75,16 +75,23 @@ export default function BattleResultScreen({ navigation, route }: Props) {
         <View style={styles.reviewSection}>
           <Text style={styles.reviewTitle}>Review</Text>
           {questionResults.map((item, index) => {
-            const correct = item.selectedIndex === item.question.correctIndex;
+            const choices = item.question.choices;
+            const selected = item.selectedIndex;
+            const selectedChoice = 
+              selected >= 0 && selected < choices.length ? choices[selected] : undefined;
+            const correct = selectedChoice?.isCorrectChoice === true;
+
             return (
-              <View
+              <View 
                 key={`${item.question.id}-${index}`}
                 style={[styles.reviewRow, correct ? styles.reviewRowCorrect : styles.reviewRowWrong]}
               >
                 <Text style={[styles.reviewIcon, correct ? styles.reviewStatusCorrect : styles.reviewStatusWrong]}>
                   {correct ? '✓' : 'X'}
                 </Text>
-                <Text style={styles.reviewQuestion} numberOfLines={2}>{item.question.question}</Text>
+                <Text style={styles.reviewQuestion} numberOfLines={2}>
+                  {item.question.text}
+                </Text>
               </View>
             );
           })}

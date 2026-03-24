@@ -11,7 +11,7 @@
   "android:qa": "dotenv -e .env.qa -- expo start --android",
   "ios": "dotenv -e .env.local -- expo start --ios",
   "ios:qa": "dotenv -e .env.qa -- expo start --ios",
-  "web": "dotenv -e .env.local -- expo start --web",
+  "web": "dotenv -e .env.local -- expo start --web --offline",
   "web:qa": "dotenv -e .env.qa -- expo start --web"
 },
   "dependencies": {

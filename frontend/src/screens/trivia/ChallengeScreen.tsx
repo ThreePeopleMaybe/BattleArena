@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
@@ -14,14 +15,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import type { QuestionTopicDto } from '../../api/questionTopics';
+import { ActiveTriviaGameResultDto, getActiveTriviaGame } from '../../api/triviaGame';
 import { useAuth } from '../../context/AuthContext';
-import { TOPICS } from '../../data/topics';
+import { useQuestionTopics } from '../../hooks/useQuestionTopics';
 import { RootStackParamList } from '../../navigation/types';
-import { getQuizHistory, seedDummyQuizHistory, type QuizHistoryEntry } from '../../storage/quizHistoryStorage';
+import { getFavouriteTopicIds, toggleFavouriteTopic } from '../../storage/favouritesStorage';
 import { getSavedWager, saveWager } from '../../storage/wagerStorage';
 import { getWalletBalance } from '../../storage/walletStorage';
 import { globalStyles } from '../../styles/globalStyles';
+import { triviaTopicStyles } from '../../styles/triviaTopicStyles';
 import { theme } from '../../theme';
+import { topicAccentColorForId } from './shared/topicList';
 
 const ALL_WAGERS = -1;
 const WAGER_OPTIONS: { value: number; label: string }[] = [
@@ -33,16 +38,18 @@ const WAGER_OPTIONS: { value: number; label: string }[] = [
   { value: 25, label: '$25' },
 ];
 
-function getTopicColor(topicId: string): string {
-  return TOPICS.find((t) => t.id === topicId)?.color ?? theme.colors.primary;
-}
-
 const ALL_TOPICS = 'all';
 
 interface TopicOption {
   id: string;
   name: string;
-  icon?: string;
+}
+
+function entryMatchesTopic(entry: ActiveTriviaGameResultDto, topic: QuestionTopicDto): boolean {
+  if (entry.topicId === topic.id) return true;
+  const a = entry.topicName.trim().toLowerCase();
+  const b = topic.name.trim().toLowerCase();
+  return a.length > 0 && a === b;
 }
 
 type Props = {
@@ -50,22 +57,50 @@ type Props = {
 };
 
 export default function ChallengeScreen({ navigation }: Props) {
-  const { isLoggedIn } = useAuth();
-  const [history, setHistory] = useState<QuizHistoryEntry[]>([]);
+  const { isLoggedIn, user } = useAuth();
+  const [activeTriviaGames, setActiveTriviaGames] = useState<ActiveTriviaGameResultDto[]>([]);
+  const [activeTriviaGamesLoading, setActiveTriviaGamesLoading] = useState(false);
+  const [activeTriviaGamesError, setActiveTriviaGamesError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string>(ALL_TOPICS);
   const [topicFilterModalVisible, setTopicFilterModalVisible] = useState(false);
   const [topicSearch, setTopicSearch] = useState('');
+  const { topics: apiTopics, loading: topicsLoading, reload: loadTopics } = useQuestionTopics();
+  const [favouriteTopicIds, setFavouriteTopicIds] = useState<number[]>([]);
+  const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
   const [wagerAmount, setWagerAmount] = useState(ALL_WAGERS);
   const [wagerLoaded, setWagerLoaded] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [wagerModalVisible, setWagerModalVisible] = useState(false);
 
-  const loadHistory = useCallback(async () => {
-    await seedDummyQuizHistory();
-    const data = await getQuizHistory();
-    setHistory(data);
-  }, []);
+  const loadActiveTriviaGames = useCallback(async () => {
+    const userId = user?.userId;
+    if (userId == null) {
+      setActiveTriviaGames([]);
+      setActiveTriviaGamesError(null);
+      return;
+    }
+    setActiveTriviaGamesLoading(true);
+    setActiveTriviaGamesError(null);
+    try {
+      const rows = await getActiveTriviaGame(userId);
+      const displayName = user?.username?.trim() || 'You';
+      setActiveTriviaGames(rows);
+    } catch {
+      setActiveTriviaGames([]);
+      setActiveTriviaGamesError('Could not load active trivia games.');
+    } finally {
+      setActiveTriviaGamesLoading(false);
+    }
+  }, [user?.userId, user?.username]);
+
+  useEffect(() => {
+    if (topicsLoading) return;
+    if (selectedTopicId === ALL_TOPICS) return;
+    if (!apiTopics.some((t) => String(t.id) === selectedTopicId)) {
+      setSelectedTopicId(ALL_TOPICS);
+    }
+  }, [apiTopics, topicsLoading, selectedTopicId]);
 
   useEffect(() => {
     getSavedWager().then((saved) => {
@@ -82,43 +117,63 @@ export default function ChallengeScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      loadHistory();
-    }, [loadHistory])
+      loadActiveTriviaGames();
+      loadTopics();
+      getFavouriteTopicIds().then(setFavouriteTopicIds);
+    }, [loadActiveTriviaGames, loadTopics])
   );
+
+  const handleToggleFavouriteTopic = useCallback(async (id: number) => {
+    const next = await toggleFavouriteTopic(id);
+    setFavouriteTopicIds(next);
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadHistory();
+    await Promise.all([loadActiveTriviaGames(), loadTopics()]);
     setRefreshing(false);
-  }, [loadHistory]);
+  }, [loadActiveTriviaGames, loadTopics]);
 
-  const filteredHistory = useMemo(() => {
-    let result = history;
+  const filteredActiveTriviaGames = useMemo(() => {
+    let result = activeTriviaGames;
     if (!isLoggedIn) {
-      result = result.filter((e) => (e.wagerAmount ?? 0) === 0);
+      result = result.filter((e) => (e.wager ?? 0) === 0);
     }
     if (selectedTopicId !== ALL_TOPICS) {
-      result = result.filter((e) => e.topicId === selectedTopicId);
+      const topic = apiTopics.find((t) => String(t.id) === selectedTopicId);
+      if (topic) {
+        result = result.filter((e) => entryMatchesTopic(e, topic));
+      }
     }
     if (wagerAmount !== ALL_WAGERS) {
-      result = result.filter((e) => (e.wagerAmount ?? 0) === wagerAmount);
+      result = result.filter((e) => (e.wager ?? 0) === wagerAmount);
     }
     return result;
-  }, [history, selectedTopicId, wagerAmount, isLoggedIn]);
+  }, [activeTriviaGames, selectedTopicId, wagerAmount, isLoggedIn, apiTopics]);
 
   const topicOptions: TopicOption[] = useMemo(() => {
     const all: TopicOption = { id: ALL_TOPICS, name: 'All topics' };
-    const list = [all, ...TOPICS.map((t) => ({ id: t.id, name: t.name, icon: t.icon }))];
+    let topicOpts = apiTopics.map((t) => ({ id: String(t.id), name: t.name }));
+    if (showFavouritesOnly) {
+      topicOpts = topicOpts.filter((t) => favouriteTopicIds.includes(Number(t.id)));
+    }
+    const list = [all, ...topicOpts];
     const q = topicSearch.trim().toLowerCase();
     if (!q) return list;
     return list.filter((t) => t.name.toLowerCase().includes(q));
-  }, [topicSearch]);
+  }, [topicSearch, apiTopics, showFavouritesOnly, favouriteTopicIds]);
 
   const selectedTopicLabel = useMemo(() => {
     if (selectedTopicId === ALL_TOPICS) return 'All topics';
-    const t = TOPICS.find((x) => x.id === selectedTopicId);
-    return t ? `${t.icon ?? ''} ${t.name}`.trim() : selectedTopicId;
-  }, [selectedTopicId]);
+    const topic = apiTopics.find((t) => String(t.id) === selectedTopicId);
+    return topic?.name ?? 'Topic';
+  }, [selectedTopicId, apiTopics]);
+
+  /** Count of favourites that match API question topics. */
+  const favouriteTopicCount = useMemo(
+    () => apiTopics.filter((t) => favouriteTopicIds.includes(t.id)).length,
+    [apiTopics, favouriteTopicIds]
+  );
 
   const effectiveWager = useMemo(() => {
     if (!isLoggedIn || wagerAmount <= 0 || wagerAmount === ALL_WAGERS) return 0;
@@ -126,7 +181,7 @@ export default function ChallengeScreen({ navigation }: Props) {
     return wagerAmount;
   }, [isLoggedIn, wagerAmount, walletBalance]);
 
-  const handleWagerSelect = (amount: number) => {
+const handleWagerSelect = (amount: number) => {
     if (!isLoggedIn) return;
     setWagerAmount(amount);
     saveWager(amount);
@@ -139,12 +194,12 @@ export default function ChallengeScreen({ navigation }: Props) {
   }, [wagerAmount]);
 
   const handleChallenge = useCallback(
-    (entry: QuizHistoryEntry) => {
+    (entry: ActiveTriviaGameResultDto) => {
       const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : 0;
       navigation.navigate('Battle', {
-        topicId: entry.topicId,
-        opponentTopicId: entry.topicId,
-        opponentName: entry.playerName ?? 'Opponent',
+        topicId: Number(entry.topicId),
+        opponentTopicId: Number(entry.topicId),
+        opponentName: entry.userName ?? 'Opponent',
         wagerAmount: wager,
         fromChallenge: true,
       });
@@ -173,192 +228,303 @@ export default function ChallengeScreen({ navigation }: Props) {
         <View style={styles.wagerSpacer} />
         <View style={styles.wagerCenterSection}>
           <Text style={styles.wagerLabel}>{!isLoggedIn ? '' : 'Wager'}</Text>
-       <TouchableOpacity
-        style={[
-          styles.wagerChip,
-          styles.wagerChipDisplay,
-          isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipSelected,
-          !isLoggedIn && styles.wagerChipDisabled,
-        ]}
-        onPress={openWagerModal}
+          <TouchableOpacity
+            style={[
+              styles.wagerChip,
+              styles.wagerChipDisplay,
+              isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipSelected,
+              !isLoggedIn && styles.wagerChipDisabled,
+            ]}
+            onPress={openWagerModal}
+            activeOpacity={0.8}
+          >
+            <Text
+              style={[
+                styles.wagerChipText,
+                isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipTextSelected,
+                !isLoggedIn && styles.wagerChipTextDisabled,
+              ]}
+            >
+              {!isLoggedIn ? 'Log in to wager' : wagerLoaded ? wagerDisplayLabel : '...'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.wagerSpacer}>
+          {isLoggedIn && (
+            <View style={styles.balanceChip}>
+              <Text style={styles.balanceLabel}>Balance</Text>
+              <Text style={styles.balanceAmount}>
+                {walletBalance !== null ? `$${walletBalance.toFixed(2)}` : '...'}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={() => setTopicFilterModalVisible(true)}
         activeOpacity={0.8}
       >
-        <Text
-          style={[
-            styles.wagerChipText,
-            isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipTextSelected,
-            !isLoggedIn && styles.wagerChipTextDisabled,
-          ]}
-        >
-          {!isLoggedIn ? 'Log in to wager' : wagerLoaded ? wagerDisplayLabel : '...'}
+        <Ionicons name="filter" size={20} color={theme.colors.primary} />
+        <Text style={styles.filterButtonText}>
+          {topicsLoading ? 'Loading topics...' : selectedTopicLabel}
         </Text>
+        {topicsLoading ? (
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        ) : (
+          <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
+        )}
       </TouchableOpacity>
-    </View>
-    <View style={styles.wagerSpacer}>
-      {isLoggedIn && (
-        <View style={styles.balanceChip}>
-          <Text style={styles.balanceLabel}>Balance</Text>
-          <Text style={styles.balanceAmount}>
-            {walletBalance !== null ? `$${walletBalance.toFixed(2)}` : '...'}
-          </Text>
-        </View>
-      )}
-    </View>
-  </View>
 
-  <TouchableOpacity
-    style={styles.filterButton}
-    onPress={() => setTopicFilterModalVisible(true)}
-    activeOpacity={0.8}
-  >
-    <Ionicons name="filter" size={20} color={theme.colors.primary} />
-    <Text style={styles.filterButtonText}>{selectedTopicLabel}</Text>
-    <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
-  </TouchableOpacity>
+      <Modal
+        visible={topicFilterModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTopicFilterModalVisible(false)}
+      >
+        <Pressable style={globalStyles.modalOverlay} onPress={() => setTopicFilterModalVisible(false)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>Filter by topic</Text>
+            <View style={triviaTopicStyles.favToggleRow}>
+              <Text style={triviaTopicStyles.favToggleHint}>Favourites</Text>
+              <TouchableOpacity
+                style={[
+                  triviaTopicStyles.favFilterChip,
+                  showFavouritesOnly && triviaTopicStyles.favFilterChipSelected,
+                ]}
+                onPress={() => setShowFavouritesOnly((prev) => !prev)}
+                activeOpacity={0.8}
+                accessibilityLabel={showFavouritesOnly ? 'Show all topics' : 'Show favourite topics only'}
+              >
+                <View>
+                  <Ionicons
+                    name="star"
+                    size={22}
+                    color={showFavouritesOnly ? theme.colors.primary : theme.colors.textMuted}
+                  />
+                  {favouriteTopicCount > 0 && (
+                    <View style={triviaTopicStyles.favCountBadge}>
+                      <Text style={triviaTopicStyles.favCountText}>{favouriteTopicCount}</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={triviaTopicStyles.topicSearchInput}
+              placeholder="Search topics..."
+              placeholderTextColor={theme.colors.textMuted}
+              value={topicSearch}
+              onChangeText={setTopicSearch}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
 
-  <Modal
-    visible={topicFilterModalVisible}
-    transparent
-    animationType="fade"
-    onRequestClose={() => setTopicFilterModalVisible(false)}
-  >
-    <Pressable style={styles.modalOverlay} onPress={() => setTopicFilterModalVisible(false)}>
-      <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-        <Text style={styles.modalTitle}>Filter by topic</Text>
-        <TextInput
-          style={styles.topicSearchInput}
-          placeholder="Search topics..."
-          placeholderTextColor={theme.colors.textMuted}
-          value={topicSearch}
-          onChangeText={setTopicSearch}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <FlatList
-          data={topicOptions}
-          keyExtractor={(item) => item.id}
-          style={styles.topicList}
-          keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => (
+            <FlatList
+              data={topicOptions}
+              keyExtractor={(item) => item.id}
+              style={styles.topicList}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <Text style={triviaTopicStyles.topicListEmpty}>
+                  {showFavouritesOnly && favouriteTopicCount === 0
+                    ? 'No favourites yet. Tap the star next to a topic to add it.'
+                    : 'No topics match your search.'}
+                </Text>
+              }
+              renderItem={({ item }) => {
+                const isFav = item.id !== ALL_TOPICS && favouriteTopicIds.includes(Number(item.id));
+                return (
+                  <View
+                    style={[
+                      styles.topicOptionRow,
+                      selectedTopicId === item.id && triviaTopicStyles.topicRowSelected,
+                    ]}
+                  >
+                    <TouchableOpacity
+                      style={styles.topicOptionMain}
+                      onPress={() => {
+                        setSelectedTopicId(item.id);
+                        setTopicFilterModalVisible(false);
+                        setTopicSearch('');
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.topicOptionText,
+                          selectedTopicId === item.id && styles.topicOptionTextSelected,
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+                  {selectedTopicId === item.id && (
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                  {item.id !== ALL_TOPICS && (
+                    <TouchableOpacity
+                      style={triviaTopicStyles.topicFavButton}
+                      onPress={() => handleToggleFavouriteTopic(Number(item.id))}
+                      activeOpacity={0.8}
+                      accessibilityLabel={isFav ? 'Remove from favourites' : 'Add to favourites'}
+                    >
+                      <Ionicons
+                        name={isFav ? 'star' : 'star-outline'}
+                        size={22}
+                        color={isFav ? theme.colors.primary : theme.colors.textMuted}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            }}
+          />
+        </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={wagerModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWagerModalVisible(false)}
+      >
+        <Pressable style={globalStyles.modalOverlay} onPress={() => setWagerModalVisible(false)}>
+          <Pressable style={globalStyles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={globalStyles.modalTitle}>Select wager amount</Text>
+            <View style={styles.modalChips}>
+              {WAGER_OPTIONS.map((opt) => {
+                const exceedsBalance = opt.value > 0 && walletBalance !== null && opt.value > walletBalance;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.wagerChip,
+                      wagerAmount === opt.value && styles.wagerChipSelected,
+                      exceedsBalance && styles.wagerChipDisabled,
+                    ]}
+                    onPress={() => !exceedsBalance && handleWagerSelect(opt.value)}
+                    activeOpacity={0.8}
+                    disabled={exceedsBalance}
+                  >
+                    <Text
+                      style={[
+                        styles.wagerChipText,
+                        wagerAmount === opt.value && styles.wagerChipTextSelected,
+                        exceedsBalance && styles.wagerChipTextDisabled,
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <TouchableOpacity
-              style={[styles.topicOption, selectedTopicId === item.id && styles.topicOptionSelected]}
-              onPress={() => {
-                setSelectedTopicId(item.id);
-                setTopicFilterModalVisible(false);
-                setTopicSearch('');
-              }}
+              style={globalStyles.primaryButton}
+              onPress={() => setWagerModalVisible(false)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.topicOptionText, selectedTopicId === item.id && styles.topicOptionTextSelected]}>
-                {item.icon ? `${item.icon} ` : ''}{item.name}
-              </Text>
-              {selectedTopicId === item.id && (
-                <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-              )}
+              <Text style={globalStyles.primaryButtonText}>Done</Text>
             </TouchableOpacity>
-          )}
-        />
-      </Pressable>
-    </Pressable>
-  </Modal>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
-  <Modal
-    visible={wagerModalVisible}
-    transparent
-    animationType="fade"
-    onRequestClose={() => setWagerModalVisible(false)}
-  >
-    <Pressable style={styles.modalOverlay} onPress={() => setWagerModalVisible(false)}>
-      <Pressable style={globalStyles.modalContent} onPress={(e) => e.stopPropagation()}>
-        <Text style={globalStyles.modalTitle}>Select wager amount</Text>
-        <View style={styles.modalChips}>
-          {WAGER_OPTIONS.map((opt) => {
-            const exceedsBalance = opt.value > 0 && walletBalance !== null && opt.value > walletBalance;
-            return (
-              <TouchableOpacity
-                key={opt.value}
-                style={[
-                  styles.wagerChip,
-                  wagerAmount === opt.value && styles.wagerChipSelected,
-                  exceedsBalance && styles.wagerChipDisabled,
-                ]}
-                onPress={() => !exceedsBalance && handleWagerSelect(opt.value)}
-                activeOpacity={0.8}
-                disabled={exceedsBalance}
-              >
-                <Text
-                  style={[
-                    styles.wagerChipText,
-                    wagerAmount === opt.value && styles.wagerChipTextSelected,
-                    exceedsBalance && styles.wagerChipTextDisabled,
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      {filteredActiveTriviaGames.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          {activeTriviaGamesError ? (
+            <Text style={[globalStyles.emptyState, styles.historyErrorText]}>{activeTriviaGamesError}</Text>
+          ) : null}
+          {!activeTriviaGamesError && activeTriviaGamesLoading ? (
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          ) : null}
+          {!activeTriviaGamesError && !activeTriviaGamesLoading ? (
+            <Text style={globalStyles.emptyState}>
+              {!isLoggedIn
+                ? 'Log in to see quiz history from your account.'
+                : activeTriviaGames.length === 0 // Using activeTriviaGames length to check overall history
+                ? 'No quiz results yet. Finish a quiz while logged in to see it here.'
+                : 'No quizzes match the selected filters. Try different topic or wager.'}
+            </Text>
+          ) : null}
+          {activeTriviaGamesError ? (
+            <TouchableOpacity
+              style={globalStyles.secondaryButton}
+              onPress={() => void loadActiveTriviaGames()}
+              activeOpacity={0.8}
+            >
+              <Text style={globalStyles.secondaryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            onPress={() =>
+              navigation.navigate('Topics', {
+                mode: 'battle',
+                wagerAmount: effectiveWager > 0 ? effectiveWager : undefined,
+                fromChallenge: true,
+              })
+            }
+            activeOpacity={0.8}
+          >
+            <Text style={globalStyles.primaryButtonText}>Start a new battle</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={globalStyles.primaryButton}
-          onPress={() => setWagerModalVisible(false)}
-          activeOpacity={0.8}
-        >
-          <Text style={globalStyles.primaryButtonText}>Done</Text>
-        </TouchableOpacity>
-      </Pressable>
-    </Pressable>
-  </Modal>
-
-  {filteredHistory.length === 0 ? (
-    <View style={styles.emptyStateContainer}>
-      <Text style={globalStyles.emptyState}>
-        {history.length === 0
-          ? 'No quizzes yet. Play a battle or arena to see history here.'
-          : 'No quizzes match the selected filters. Try different topic or wager.'}
-      </Text>
-      <TouchableOpacity
-        style={globalStyles.primaryButton}
-        onPress={() => navigation.navigate('Topics', { 
-          mode: 'battle', 
-          wagerAmount: effectiveWager > 0 ? effectiveWager : undefined,
-          fromChallenge: true 
-        })}
-        activeOpacity={0.8}
-      >
-        <Text style={globalStyles.primaryButtonText}>Start a new battle</Text>
-      </TouchableOpacity>
-    </View>
-  ) : (
-    filteredHistory.map((entry) => (
-      <View
-        key={entry.id}
-        style={[styles.entry, { borderLeftColor: getTopicColor(entry.topicId) }]}
-      >
-        <View style={styles.entryContent}>
-          <Text style={styles.playerText} numberOfLines={1}>{entry.playerName ?? 'Unknown'}</Text>
-          <Text style={styles.topicName} numberOfLines={1}>{entry.topicName}</Text>
-          <Text style={styles.wagerText} numberOfLines={1}>
-            {entry.wagerAmount != null && entry.wagerAmount > 0 
-              ? `$${entry.wagerAmount}` 
-              : (isLoggedIn ? 'No wager' : '')}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.challengeButton}
-          onPress={() => handleChallenge(entry)}
-          activeOpacity={0.8}
-        >
-          <MaterialCommunityIcons name="sword-cross" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-      </View>
-    ))
-  )}
-</ScrollView>
+      ) : (
+        filteredActiveTriviaGames.map((entry) => (
+          <View
+            key={entry.gameId}
+            style={[styles.entry, { borderLeftColor: topicAccentColorForId(entry.topicName) }]}
+          >
+            <View style={styles.entryContent}>
+              <Text style={styles.playerText} numberOfLines={1}>
+                {entry.userName ?? 'Unknown'}
+              </Text>
+              <Text style={styles.topicName} numberOfLines={1}>
+                {entry.topicName}
+              </Text>
+              <Text style={styles.wagerText} numberOfLines={1}>
+                {entry.wager != null && entry.wager > 0
+                  ? `$${entry.wager}`
+                  : isLoggedIn ? 'No wager' : ''}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.challengeButton}
+              onPress={() => handleChallenge(entry)}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons name="sword-cross" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  historyErrorText: {
+    color: theme.colors.accent,
+    textAlign: 'center',
+  },
+  topicOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: theme.radius.sm,
+  },
+  topicOptionMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+  },
   emptyStateContainer: {
     alignItems: 'center',
     gap: theme.spacing.lg,

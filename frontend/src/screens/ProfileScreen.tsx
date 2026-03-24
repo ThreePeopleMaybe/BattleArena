@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Modal,
-  Pressable,
-  Alert,
-} from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../theme';
-import { globalStyles } from '../styles/globalStyles';
-import { RootStackParamList } from '../navigation/types';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { getWalletBalance, addToWallet } from '../storage/walletStorage';
+import { RootStackParamList } from '../navigation/types';
+import { addToWallet, getWalletBalance } from '../storage/walletStorage';
+import { globalStyles } from '../styles/globalStyles';
+import { theme } from '../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
@@ -433,7 +433,9 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.surfaceLight,
   },
   cardLabel: {
+    fontSize: theme.fontSize.sm,
     marginBottom: 2,
+    color: theme.colors.textMuted,
   },
   cardValue: {
     fontSize: theme.fontSize.sm,

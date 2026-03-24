@@ -46,6 +46,15 @@ export const globalStyles = StyleSheet.create({
   },
 
   // Form
+  fieldGroup: {
+    marginBottom: theme.spacing.md,
+  },
+  inputLabel: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+    marginBottom: theme.spacing.xs,
+  },
   input: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.md,
@@ -56,6 +65,9 @@ export const globalStyles = StyleSheet.create({
     borderColor: theme.colors.surfaceLight,
     fontSize: theme.fontSize.md,
     color: theme.colors.text,
+  },
+  inputInField: {
+    marginBottom: 0,
   },
   errorText: {
     fontSize: theme.fontSize.md,
