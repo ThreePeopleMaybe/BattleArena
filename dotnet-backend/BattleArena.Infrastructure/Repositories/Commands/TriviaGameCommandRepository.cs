@@ -5,7 +5,7 @@ namespace BattleArena.Infrastructure.Repositories.Commands;
 
 public class TriviaGameCommandRepository(BattleArenaDbContext dbContext) : ITriviaGameCommandRepository
 {
-    public async Task<Dictionary<long, long>> InsertTriviaGameQuestionAsync(long gameId, List<long> questionIds, CancellationToken cancellationToken = default)
+    public async Task<Dictionary<int, int>> InsertTriviaGameQuestionAsync(long gameId, List<int> questionIds, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         var entities = new List<TriviaGameQuestion>();
@@ -28,8 +28,7 @@ public class TriviaGameCommandRepository(BattleArenaDbContext dbContext) : ITriv
 
         return entities.ToDictionary(e => e.QuestionId, e => e.Id);
     }
-
-    public async Task InsertTriviaGameChoiceAsync(Dictionary<long, long> triviaGameQuestions, IReadOnlyList<QuestionDto> questions, CancellationToken cancellationToken = default)
+    public async Task InsertTriviaGameChoiceAsync(Dictionary<int, int> triviaGameQuestions, IReadOnlyList<QuestionDto> questions, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         var questionsById = questions.ToDictionary(q => q.Id);
@@ -58,7 +57,6 @@ public class TriviaGameCommandRepository(BattleArenaDbContext dbContext) : ITriv
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
-
     public async Task<long> InsertTriviaGameResultAsync(long gameId, long userId, int numberOfCorrectAnswers, int timeTakenInSeconds, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;

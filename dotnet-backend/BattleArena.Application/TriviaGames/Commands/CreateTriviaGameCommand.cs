@@ -13,7 +13,7 @@ public sealed class CreateTriviaGameCommandHandler(ITriviaGameCommandRepository 
 {
     public async Task<CreateTriviaGameResult> Handle(CreateTriviaGameCommand request, CancellationToken cancellationToken)
     {
-        var questions = await sender.Send(new GetQuestionsByTopicCategoryIdQuery(new List<int>() { request.TopicCategoryId }), cancellationToken);
+        var questions = await sender.Send(new GetQuestionsByTopicIdQuery(new List<int>() { request.TopicCategoryId }), cancellationToken);
 
         using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 

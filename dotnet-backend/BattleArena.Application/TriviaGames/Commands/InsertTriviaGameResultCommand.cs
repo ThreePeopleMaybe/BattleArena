@@ -20,10 +20,8 @@ public sealed class InsertTriviaGameResultCommandHandler(ITriviaGameCommandRepos
     {
         using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
 
-        // 1. Mark the base game record as finished
         await sender.Send(new FinishGameCommand(request.GameId), cancellationToken);
 
-        // 2. Insert the high-level trivia result (score, time)
         var id = await triviaGameCommandRepository.InsertTriviaGameResultAsync(
             request.GameId,
             request.UserId,
@@ -31,7 +29,6 @@ public sealed class InsertTriviaGameResultCommandHandler(ITriviaGameCommandRepos
             request.TimeTakenInSeconds,
             cancellationToken);
 
-        // 3. Map and insert the granular details (individual answer choices)
         var details = request.Details.Select(d => new TriviaGameResultDetail
         {
             QuestionId = d.TriviaGameQuestionId,

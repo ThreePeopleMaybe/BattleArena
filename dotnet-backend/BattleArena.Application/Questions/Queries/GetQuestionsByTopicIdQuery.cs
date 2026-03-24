@@ -4,26 +4,27 @@ using MediatR;
 
 namespace BattleArena.Application.Questions.Queries;
 
-public sealed record GetQuestionsByTopicCategoryIdQuery(IReadOnlyList<int> TopicCategoryIds)
+public sealed record GetQuestionsByTopicIdQuery(IReadOnlyList<int> TopicIds)
     : IRequest<IReadOnlyList<QuestionDto>>;
 
-public sealed class GetQuestionsByTopicCategoryIdQueryHandler(IQuestionQueryRepository questionRepository, IMapper mapper)
-    : IRequestHandler<GetQuestionsByTopicCategoryIdQuery, IReadOnlyList<QuestionDto>>
+public sealed class GetQuestionsByTopicIdQueryHandler(IQuestionQueryRepository questionRepository, IMapper mapper)
+    : IRequestHandler<GetQuestionsByTopicIdQuery, IReadOnlyList<QuestionDto>>
 {
-    public async Task<IReadOnlyList<QuestionDto>> Handle(GetQuestionsByTopicCategoryIdQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<QuestionDto>> Handle(GetQuestionsByTopicIdQuery request, CancellationToken cancellationToken)
     {
-        var tGetQuestions = questionRepository.GetQuestionsByTopicCategoryIdsAsync(request.TopicCategoryIds, cancellationToken);
-        var tGetQuestionChoices = questionRepository.GetQuestionChoicesByTopicCategoryIdsAsync(request.TopicCategoryIds, cancellationToken);
+        if (request.TopicIds.Count == 0)
+        {
+            return [];
+        }
 
-        await Task.WhenAll(tGetQuestions, tGetQuestionChoices);
+        var questions = await questionRepository.GetQuestionsByTopicIdsAsync(request.TopicIds, cancellationToken);
+        var questionChoices = await questionRepository.GetQuestionChoicesByTopicIdsAsync(request.TopicIds, cancellationToken);
 
-        var questions = tGetQuestions.Result;
         var selectedQuestions = questions
-            .GroupBy(q => q.TopicCategoryId)
+            .GroupBy(q => q.QuestionTopicId)
             .SelectMany(g => g.OrderBy(_ => Random.Shared.Next()).Take(10))
             .ToList();
 
-        var questionChoices = tGetQuestionChoices.Result;
         var choicesByQuestionId = questionChoices
             .GroupBy(qc => qc.QuestionId)
             .ToDictionary(g => g.Key, g => g.ToList());
@@ -38,25 +39,24 @@ public sealed class GetQuestionsByTopicCategoryIdQueryHandler(IQuestionQueryRepo
                 continue;
             }
 
-            var correctChoice = availableChoices.FirstOrDefault(qc => qc.Id == question.CorrectChoiceId);
+            var correctChoice = availableChoices.FirstOrDefault(qc => qc.IsCorrectChoice);
+            var correctId = correctChoice?.Id ?? 0;
+
             var choices = availableChoices
-                .Where(qc => qc.Id != question.CorrectChoiceId)
+                .Where(qc => qc.Id != correctId)
                 .ToList();
 
-            // Shuffle incorrect choices using Fisher-Yates
             for (var i = choices.Count - 1; i > 0; i--)
             {
                 var j = Random.Shared.Next(i + 1);
                 (choices[i], choices[j]) = (choices[j], choices[i]);
             }
 
-            // Limit to 3 incorrect choices
             if (choices.Count > 3)
             {
                 choices.RemoveRange(3, choices.Count - 3);
             }
 
-            // Add the correct choice back in
             if (correctChoice is not null)
             {
                 choices.Add(correctChoice);

@@ -28,15 +28,35 @@ internal class DbInitializer(IServiceProvider serviceProvider, ILogger<DbInitial
         var strategy = battleArenaDbContext.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(battleArenaDbContext.Database.MigrateAsync, cancellationToken);
 
-        await SeedAsync(battleArenaDbContext, cancellationToken);
+        await SeedGameTypesAsync(battleArenaDbContext, cancellationToken);
 
         logger.LogInformation("Database initialization completed after {ElapsedMilliseconds}ms",
             sw.ElapsedMilliseconds);
     }
 
-    private async Task SeedAsync(BattleArenaDbContext battleArenaDbContext, CancellationToken cancellationToken)
+    private async Task SeedGameTypesAsync(BattleArenaDbContext battleArenaDbContext, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Seeding database");
+        var gameTypeNames = new[] { "Trivia", "Bowling", "Archery", "BalloonPopping" };
+
+        var existingNames = await battleArenaDbContext.Set<GameType>()
+            .Select(gt => gt.game_name)
+            .ToListAsync(cancellationToken);
+
+        var existingNameSet = existingNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var gameTypesToAdd = gameTypeNames
+            .Where(name => !existingNameSet.Contains(name))
+            .Select(name => new GameType { game_name = name })
+            .ToList();
+
+        if (gameTypesToAdd.Count == 0)
+        {
+            return;
+        }
+
+        await battleArenaDbContext.Set<GameType>().AddRangeAsync(gameTypesToAdd, cancellationToken);
+        await battleArenaDbContext.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Seeded {GameTypeCount} game types", gameTypesToAdd.Count);
     }
 }
- 
