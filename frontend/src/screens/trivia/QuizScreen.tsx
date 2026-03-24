@@ -1,14 +1,20 @@
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getQuestionsForTopic, getQuestionsFromTopics } from '../../data/questions';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { parseQuestionTopicIds } from '../../api/questions';
+import {
+  createTriviaGame,
+  insertTriviaGameResult,
+} from '../../api/triviaGame';
+import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
 import { globalStyles } from '../../styles/globalStyles';
 import { theme } from '../../theme';
 import { Question, QuizQuestionResult } from '../../types';
 
 const QUIZ_TIME_LIMIT_MS = 100 * 1000; // 100 seconds
+const DEFAULT_GAME_TYPE_ID = 1;
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Quiz'>;
@@ -21,14 +27,102 @@ function generateOpponentScore(userCorrect: number, total: number): { correct: n
   return { correct, timeMs };
 }
 
+function countCorrectAnswers(results: QuizQuestionResult[]): number {
+  return results.filter((r) => {
+    const ch = r.selectedIndex >= 0 ? r.question.choices[r.selectedIndex] : undefined;
+    return ch?.isCorrectChoice === true;
+  }).length;
+}
+
+function buildTriviaResultDetails(
+  results: QuizQuestionResult[],
+  triviaGameQuestionIdsByQuestionId: Record<string, number>
+): { triviaGameQuestionId: number; triviaGameAnswerId: number }[] {
+  const details: { triviaGameQuestionId: number; triviaGameAnswerId: number }[] = [];
+  for (const r of results) {
+    const triviaQId = triviaGameQuestionIdsByQuestionId[String(r.question.id)];
+    if (triviaQId == null) continue;
+    if (r.selectedIndex < 0) continue;
+    const choice = r.question.choices[r.selectedIndex];
+    if (!choice) continue;
+    const answerId = choice.id;
+    if (!Number.isFinite(answerId)) continue;
+    details.push({ triviaGameQuestionId: triviaQId, triviaGameAnswerId: answerId });
+  }
+  return details;
+}
+
 export default function QuizScreen({ navigation, route }: Props) {
   const { topicId, opponentTopicId, battleMode, opponentName, wagerAmount, arenaId, fromChallenge } = route.params;
-  
-  const [questions] = useState<Question[]>(() => 
-    opponentTopicId
-      ? getQuestionsFromTopics(topicId, opponentTopicId, 10)
-      : getQuestionsForTopic(topicId, 10)
-  );
+  const { user } = useAuth();
+
+  const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const gameIdRef = useRef<number | null>(null);
+  const triviaMapRef = useRef<Record<string, number>>({});
+
+  const persistQuizResult = useCallback((finalResults: QuizQuestionResult[], timeMs: number) => {
+    const gameId = gameIdRef.current;
+    const map = triviaMapRef.current;
+    const userId = user?.userId;
+    if (gameId == null || userId == null) return;
+
+    const numberOfCorrectAnswers = countCorrectAnswers(finalResults);
+    const timeTakenInSeconds = Math.max(0, Math.round(timeMs / 1000));
+    const details = buildTriviaResultDetails(finalResults, map);
+
+    void insertTriviaGameResult({
+      gameId,
+      userId,
+      numberOfCorrectAnswers,
+      timeTakenInSeconds,
+    }).catch(() => {});
+  }, [user?.userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadError(null);
+    setQuestions(null);
+    gameIdRef.current = null;
+    triviaMapRef.current = {};
+
+    (async () => {
+      try {
+        const topicIds = parseQuestionTopicIds(topicId, opponentTopicId);
+        if (topicIds.length === 0) {
+          if (!cancelled) setLoadError('Invalid topic.');
+          return;
+        }
+
+        const created = await createTriviaGame({
+          gameTypeId: DEFAULT_GAME_TYPE_ID,
+          wager: Math.max(0, Math.floor(wagerAmount ?? 0)),
+          topicCategoryIds: topicIds,
+        });
+
+        if (cancelled) return;
+
+        if (!created.questions.length) {
+          setLoadError('No questions available for this topic.');
+          return;
+        }
+
+        gameIdRef.current = created.gameId;
+        triviaMapRef.current = created.triviaGameQuestionIdsByQuestionId ?? {};
+
+        setQuestions(created.questions);
+      } catch {
+        if (!cancelled) {
+          setLoadError('Could not start quiz. Check your connection and try again.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId, opponentTopicId, wagerAmount]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startTime] = useState(Date.now());
@@ -38,110 +132,40 @@ export default function QuizScreen({ navigation, route }: Props) {
   const [questionResults, setQuestionResults] = useState<QuizQuestionResult[]>([]);
   const timeUpTriggered = useRef(false);
 
-  useEffect(() => {
-    const interval = setInterval(() => setElapsed(Date.now() - startTime), 500);
-    return () => clearInterval(interval);
-  }, [startTime]);
+useEffect(() => {
+  const interval = setInterval(() => setElapsed(Date.now() - startTime), 500);
+  return () => clearInterval(interval);
+}, [startTime]);
 
-  const question = questions[currentIndex];
-  const isLast = currentIndex === questions.length - 1;
+const question = questions != null ? questions[currentIndex] : undefined;
+const isLast = questions != null ? currentIndex === questions.length - 1 : false;
 
-  const handleAnswer = useCallback(
-    (optionIndex: number) => {
-      if (answered) return;
-      setAnswered(true);
-      setSelectedIndex(optionIndex);
-    },
-    [answered]
-  );
+const handleAnswer = useCallback(
+  (optionIndex: number) => {
+    if (answered) return;
+    setAnswered(true);
+    setSelectedIndex(optionIndex);
+  },
+  [answered]
+);
 
-  const goNext = useCallback(() => {
-    const resultEntry: QuizQuestionResult = { question, selectedIndex: selectedIndex ?? -1 };
-    
-    if (isLast) {
-      const timeMs = Date.now() - startTime;
-      const finalResults = [...questionResults, resultEntry];
-      const userCorrect = finalResults.filter((r) => r.selectedIndex === r.question.correctIndex).length;
-      const total = questions.length;
-      
-      let opponentCorrect = 0;
-      let opponentTimeMs = 0;
-      let name = '';
+const goNext = useCallback(() => {
+  if (!questions || questions.length === 0) return;
+  if (!question) return;
 
-      if (battleMode && opponentName) {
-        if (opponentName === 'Arena' && arenaId) {
-          navigation.replace('WaitingForPlayers', {
-            mode: 'arena',
-            arenaId,
-            topicId,
-            userCorrect,
-            userTimeMs: timeMs,
-            questionCount: total,
-          });
-          return;
-        }
-        
-        const opp = generateOpponentScore(userCorrect, total);
-        opponentCorrect = opp.correct;
-        opponentTimeMs = opp.timeMs;
-        name = opponentName;
-        
-        navigation.replace('BattleResult', {
-          topicId,
-          userCorrect,
-          userTimeMs: timeMs,
-          opponentCorrect,
-          opponentTimeMs,
-          opponentName: name,
-          questionResults: finalResults,
-          wagerAmount,
-          fromChallenge
-        });
-        return;
-      }
+  const resultEntry: QuizQuestionResult = { question, selectedIndex: selectedIndex ?? -1 };
 
-      navigation.replace('BattleResult', {
-        topicId,
-        userCorrect,
-        userTimeMs: timeMs,
-        opponentCorrect,
-        opponentTimeMs,
-        opponentName: name,
-        questionResults: finalResults,
-        wagerAmount,
-      });
-      return;
-    }
+  if (isLast) {
+    const timeMs = Date.now() - startTime;
+    const finalResults = [...questionResults, resultEntry];
+    const userCorrect = countCorrectAnswers(finalResults);
+    const total = questions.length;
 
-    setQuestionResults((prev) => [...prev, resultEntry]);
-    setCurrentIndex((i) => i + 1);
-    setSelectedIndex(null);
-    setAnswered(false);
-  }, [isLast, startTime, navigation, topicId, selectedIndex, question, battleMode, opponentName, questions.length, questionResults, wagerAmount, arenaId, fromChallenge]);
-
-  // Auto-advance after any answer
-  useEffect(() => {
-    if (!answered || selectedIndex === null) return;
-    const timeout = setTimeout(goNext, 100); // Small delay to show selection
-    return () => clearTimeout(timeout);
-  }, [answered, selectedIndex, goNext]);
-
-  // 100 second time limit
-  useEffect(() => {
-    if (elapsed < QUIZ_TIME_LIMIT_MS || timeUpTriggered.current) return;
-    timeUpTriggered.current = true;
-    
-    const timeMs = Math.min(elapsed, QUIZ_TIME_LIMIT_MS);
-    const unansweredResults: QuizQuestionResult[] = questions
-      .slice(currentIndex)
-      .map((q) => ({ question: q, selectedIndex: -1 }));
-    
-    const fullResults = [...questionResults, ...unansweredResults];
-    const userCorrect = fullResults.filter((r) => r.selectedIndex === r.question.correctIndex).length;
-    
     let opponentCorrect = 0;
     let opponentTimeMs = 0;
     let name = '';
+
+    persistQuizResult(finalResults, timeMs);
 
     if (battleMode && opponentName) {
       if (opponentName === 'Arena' && arenaId) {
@@ -151,12 +175,12 @@ export default function QuizScreen({ navigation, route }: Props) {
           topicId,
           userCorrect,
           userTimeMs: timeMs,
-          questionCount: questions.length,
+          questionCount: total,
         });
         return;
       }
 
-      const opp = generateOpponentScore(userCorrect, questions.length);
+      const opp = generateOpponentScore(userCorrect, total);
       opponentCorrect = opp.correct;
       opponentTimeMs = opp.timeMs;
       name = opponentName;
@@ -168,9 +192,9 @@ export default function QuizScreen({ navigation, route }: Props) {
         opponentCorrect,
         opponentTimeMs,
         opponentName: name,
-        questionResults: fullResults,
+        questionResults: finalResults,
         wagerAmount,
-        fromChallenge
+        fromChallenge,
       });
       return;
     }
@@ -182,46 +206,174 @@ export default function QuizScreen({ navigation, route }: Props) {
       opponentCorrect,
       opponentTimeMs,
       opponentName: name,
-      questionResults: fullResults,
+      questionResults: finalResults,
       wagerAmount,
-      fromChallenge
     });
-  }, [elapsed, currentIndex, questionResults, questions, battleMode, opponentName, navigation, topicId, wagerAmount, arenaId, fromChallenge]);
-
-  if (!question) {
-    return (
-      <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
-        <Text style={styles.text}>Loading...</Text>
-      </View>
-    );
+    return;
   }
 
+  setQuestionResults((prev) => [...prev, resultEntry]);
+  setCurrentIndex((i) => i + 1);
+  setSelectedIndex(null);
+  setAnswered(false);
+}, [
+  isLast,
+  startTime,
+  navigation,
+  topicId,
+  selectedIndex,
+  question,
+  battleMode,
+  opponentName,
+  questions,
+  questionResults,
+  wagerAmount,
+  arenaId,
+  fromChallenge,
+  persistQuizResult,
+]);
+
+useEffect(() => {
+  if (!answered || selectedIndex === null) return;
+  const timeout = setTimeout(goNext, 100);
+  return () => clearTimeout(timeout);
+}, [answered, selectedIndex, goNext]);
+
+useEffect(() => {
+  if (!questions || questions.length === 0) return;
+  if (elapsed < QUIZ_TIME_LIMIT_MS || timeUpTriggered.current) return;
+  timeUpTriggered.current = true;
+
+  const timeMs = Math.min(elapsed, QUIZ_TIME_LIMIT_MS);
+  const unansweredResults: QuizQuestionResult[] = questions
+    .slice(currentIndex)
+    .map((q) => ({ question: q, selectedIndex: -1 }));
+
+  const fullResults = [...questionResults, ...unansweredResults];
+  const userCorrect = countCorrectAnswers(fullResults);
+
+  let opponentCorrect = 0;
+  let opponentTimeMs = 0;
+  let name = '';
+
+  persistQuizResult(fullResults, timeMs);
+
+  if (battleMode && opponentName) {
+    if (opponentName === 'Arena' && arenaId) {
+      navigation.replace('WaitingForPlayers', {
+        mode: 'arena',
+        arenaId,
+topicId,
+        userCorrect,
+        userTimeMs: timeMs,
+        questionCount: questions.length,
+      });
+      return;
+    }
+
+    const opp = generateOpponentScore(userCorrect, questions.length);
+    opponentCorrect = opp.correct;
+    opponentTimeMs = opp.timeMs;
+    name = opponentName;
+
+    navigation.replace('BattleResult', {
+      topicId,
+      userCorrect,
+      userTimeMs: timeMs,
+      opponentCorrect,
+      opponentTimeMs,
+      opponentName: name,
+      questionResults: fullResults,
+      wagerAmount,
+      fromChallenge,
+    });
+    return;
+  }
+
+  navigation.replace('BattleResult', {
+    topicId,
+    userCorrect,
+    userTimeMs: timeMs,
+    opponentCorrect,
+    opponentTimeMs,
+    opponentName: name,
+    questionResults: fullResults,
+    wagerAmount,
+    fromChallenge,
+  });
+}, [
+  elapsed,
+  currentIndex,
+  questionResults,
+  questions,
+  battleMode,
+  opponentName,
+  navigation,
+  topicId,
+  wagerAmount,
+  arenaId,
+  fromChallenge,
+  persistQuizResult,
+]);
+
+if (loadError) {
   return (
     <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
-      <View style={styles.header}>
-        <Text style={styles.progress}>
-          {currentIndex + 1} / {questions.length}
-        </Text>
-        <Text style={styles.timer}>{Math.floor(elapsed / 1000)} / 100s</Text>
-      </View>
-
-      <Text style={styles.question}>{question.question}</Text>
-
-      <View style={styles.options}>
-        {question.options.map((option, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.option, selectedIndex === index && styles.optionSelected]}
-            onPress={() => handleAnswer(index)}
-            disabled={answered}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.optionText}>{option}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <Text style={styles.text}>{loadError}</Text>
+      <TouchableOpacity 
+        style={[globalStyles.smallButton, styles.goBackBtn]} 
+        onPress={() => navigation.goBack()} 
+        activeOpacity={0.8}
+      >
+        <Text style={globalStyles.smallButtonText}>Go back</Text>
+      </TouchableOpacity>
     </View>
   );
+}
+
+if (questions === null) {
+  return (
+    <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding, styles.loadingWrap]}>
+      <ActivityIndicator size="large" color={theme.colors.primary} />
+      <Text style={[styles.text, styles.loadingLabel]}>Loading questions...</Text>
+    </View>
+  );
+}
+
+if (!question) {
+  return (
+    <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
+      <Text style={styles.text}>Loading...</Text>
+    </View>
+  );
+}
+
+return (
+  <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
+    <View style={styles.header}>
+      <Text style={styles.progress}>
+        {currentIndex + 1} / {questions.length}
+      </Text>
+      <Text style={styles.timer}>{Math.floor(elapsed / 1000)} / 100s</Text>
+    </View>
+
+    <Text style={styles.question}>{question.text}</Text>
+
+    <View style={styles.options}>
+      {question.choices.map((option, index) => (
+        <TouchableOpacity
+          key={index}
+          style={[styles.option, selectedIndex === index && styles.optionSelected]}
+          onPress={() => handleAnswer(index)}
+          disabled={answered}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.optionText}>{option.text}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
@@ -267,5 +419,17 @@ const styles = StyleSheet.create({
   text: {
     color: theme.colors.text,
     fontSize: theme.fontSize.lg,
+  },
+  goBackBtn: {
+    marginTop: theme.spacing.lg,
+    alignSelf: 'flex-start',
+  },
+  loadingWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.md,
+  },
+  loadingLabel: {
+    marginTop: theme.spacing.sm,
   },
 });

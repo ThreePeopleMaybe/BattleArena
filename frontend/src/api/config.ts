@@ -3,8 +3,8 @@ import Constants from 'expo-constants';
 const defaultBase = '';
 
 function readFromExtra(): string | undefined {
-  const extra = Constants.expoConfig?.extra as { battlearenaApiUrl?: string } | undefined;
-  const url = extra?.battlearenaApiUrl;
+  const extra = Constants.expoConfig?.extra as { battleArenaApiUrl?: string } | undefined;
+  const url = extra?.battleArenaApiUrl;
   if (typeof url === 'string' && url.trim().length > 0) return url.trim();
   return undefined;
 }

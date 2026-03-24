@@ -10,15 +10,15 @@ public static class QuestionApi
     {
         var group = routes.MapGroup("/api/v1/questions").WithTags("Questions");
 
-        group.MapGet("topic-categories", GetQuestionsByTopicCategoryIds)
+        group.MapGet("topics", GetQuestionsByTopicIds)
             .Produces<List<QuestionDto>>();
 
         return group;
     }
 
-    static async Task<IResult> GetQuestionsByTopicCategoryIds(int[] topicCategoryIds, ISender sender, CancellationToken cancellationToken)
+    static async Task<IResult> GetQuestionsByTopicIds(int[] topicIds, ISender sender, CancellationToken cancellationToken)
     {
-        var questions = await sender.Send(new GetQuestionsByTopicCategoryIdQuery(topicCategoryIds), cancellationToken);
+        var questions = await sender.Send(new GetQuestionsByTopicIdQuery(topicIds), cancellationToken);
         return Results.Ok(questions);
     }
 }

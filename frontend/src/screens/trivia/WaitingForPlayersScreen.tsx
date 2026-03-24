@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
-import { theme } from '../../theme';
-import { globalStyles } from '../../styles/globalStyles';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { RootStackParamList } from '../../navigation/types';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 const WAIT_SECONDS = 15;
 
@@ -26,6 +26,7 @@ export default function WaitingForPlayersScreen({ navigation, route }: Props) {
           if (isArena) {
             navigation.replace('ArenaResult', {
               arenaId: params.arenaId,
+              topicId: params.topicId ?? 0,
               userCorrect: params.userCorrect,
               userTimeMs: params.userTimeMs,
               questionCount: params.questionCount,

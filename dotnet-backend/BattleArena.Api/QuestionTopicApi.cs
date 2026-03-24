@@ -8,16 +8,16 @@ public static class QuestionTopicApi
 {
     public static RouteGroupBuilder MapQuestionTopicApi(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/v1/question-topics").WithTags("Question Topics");
+        var group = routes.MapGroup("/api/v1/topics").WithTags("Topics");
 
-        group.MapGet("categories", GetCategories).Produces<List<QuestionTopicCategoryDto>>();
+        group.MapGet("topics", GetTopics).Produces<List<QuestionTopicDto>>();
 
         return group;
     }
 
-    static async Task<IResult> GetCategories(ISender sender, CancellationToken cancellationToken)
+    static async Task<IResult> GetTopics(ISender sender, CancellationToken cancellationToken)
     {
-        var categories = await sender.Send(new GetQuestionTopicCategoriesQuery(), cancellationToken);
-        return Results.Ok(categories);
+        var topics = await sender.Send(new GetQuestionTopicsQuery(), cancellationToken);
+        return Results.Ok(topics);
     }
 }

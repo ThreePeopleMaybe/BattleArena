@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Data\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\BattleArena.Db\BattleArena.Db.csproj" />
+      <ProjectReference Include="..\BattleArena.Shared\BattleArena.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

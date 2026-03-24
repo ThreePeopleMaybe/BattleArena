@@ -7,6 +7,9 @@
     <File Path="global.json" />
     <File Path=".editorconfig" />
   </Folder>
+  <Folder Name="/jobs/">
+    <Project Path="BattleArena.Trivia.DataLoader/BattleArena.Trivia.DataLoader.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="BattleArena.Api\BattleArena.Api.csproj" />
     <Project Path="BattleArena.Application/BattleArena.Application.csproj" />

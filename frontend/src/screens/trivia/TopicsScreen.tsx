@@ -1,22 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { TOPICS } from '../../data/topics';
+import { useQuestionTopics } from '../../hooks/useQuestionTopics';
 import { RootStackParamList } from '../../navigation/types';
 import { getFavouriteTopicIds, toggleFavouriteTopic } from '../../storage/favouritesStorage';
 import { globalStyles } from '../../styles/globalStyles';
+import { triviaTopicStyles } from '../../styles/triviaTopicStyles';
 import { theme } from '../../theme';
-import type { Topic } from '../../types';
+import { topicListItemFromTopic, type TopicListItem } from './shared/topicList';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Topics'>;
   route: RouteProp<RootStackParamList, 'Topics'>;
 };
 
-function pickRandomTopic(topics: Topic[]): Topic {
-  return topics[Math.floor(Math.random() * topics.length)];
+function pickRandomTopic(list: TopicListItem[]): TopicListItem {
+  return list[Math.floor(Math.random() * list.length)];
 }
 
 export default function TopicsScreen({ navigation, route }: Props) {
@@ -30,42 +31,57 @@ export default function TopicsScreen({ navigation, route }: Props) {
   const pickingOpponentTopic = isBattle && !!yourTopicId && !fromArena;
 
   const [search, setSearch] = useState('');
-  const [favouriteTopicIds, setFavouriteTopicIds] = useState<string[]>([]);
+  const [favouriteTopicIds, setFavouriteTopicIds] = useState<number[]>([]);
   const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
   const [autoSelectSecondsLeft, setAutoSelectSecondsLeft] = useState(30);
 
-  useEffect(() => {
-    getFavouriteTopicIds().then(setFavouriteTopicIds);
-  }, []);
+  const { topics: topicRows, loading: topicsLoading, loadFailed: topicsLoadFailed, reload: loadTopics } =
+    useQuestionTopics();
 
-  const handleToggleFavouriteTopic = async (id: string) => {
-    const next = await toggleFavouriteTopic(id);
+  const topics = useMemo(() => topicRows.map(topicListItemFromTopic), [topicRows]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTopics();
+      getFavouriteTopicIds().then(setFavouriteTopicIds);
+    }, [loadTopics])
+  );
+
+  const handleToggleFavouriteTopic = async (topicId: number) => {
+    const next = await toggleFavouriteTopic(topicId);
     setFavouriteTopicIds(next);
   };
 
   const filteredTopics = useMemo(() => {
     const byFav = showFavouritesOnly
-      ? TOPICS.filter((t) => favouriteTopicIds.includes(t.id))
-      : TOPICS;
+      ? topics.filter((t) => favouriteTopicIds.includes(t.id))
+      : topics;
     const q = search.trim().toLowerCase();
     if (!q) return byFav;
     return byFav.filter((t) => t.name.toLowerCase().includes(q));
-  }, [search, showFavouritesOnly, favouriteTopicIds]);
+  }, [search, showFavouritesOnly, favouriteTopicIds, topics]);
+
+  const favouriteListedCount = useMemo(
+    () => topics.filter((t) => favouriteTopicIds.includes(t.id)).length,
+    [topics, favouriteTopicIds]
+  );
 
   const autoSelectIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleTopicPress = (topicId: string) => {
+  const handleTopicPress = (topicId: number) => {
     if (autoSelectIntervalRef.current) {
       clearInterval(autoSelectIntervalRef.current);
       autoSelectIntervalRef.current = null;
     }
+
     if (!isBattle) {
-      navigation.navigate('Quiz', { topicId });
+      navigation.navigate('Quiz', { topicId: topicId });
       return;
     }
+
     if (fromArena) {
       navigation.navigate('Battle', {
-        topicId,
+        topicId: topicId,
         opponentTopicId: topicId,
         opponentName: 'Arena',
         wagerAmount: wagerAmount ?? 0,
@@ -73,9 +89,10 @@ export default function TopicsScreen({ navigation, route }: Props) {
       });
       return;
     }
+
     if (pickingOpponentTopic) {
       navigation.navigate('Battle', {
-        topicId: yourTopicId!,
+        topicId: topicId,
         opponentTopicId: topicId,
         opponentName: opponentName ?? 'Opponent',
         wagerAmount: wagerAmount ?? 0,
@@ -83,18 +100,22 @@ export default function TopicsScreen({ navigation, route }: Props) {
       });
     } else {
       navigation.navigate('Battle', {
-        topicId,
+        topicId: topicId,
         opponentTopicId: topicId,
         opponentName: opponentName ?? 'Opponent',
         wagerAmount: wagerAmount ?? 0,
         arenaId,
-        fromChallenge
+        fromChallenge,
       });
     }
   };
 
+  const canAutoSelectTopic = !topicsLoading && !topicsLoadFailed && topics.length > 0;
+
   const handleAutoSelect = () => {
-    const list = filteredTopics.length > 0 ? filteredTopics : TOPICS;
+    if (!canAutoSelectTopic) return;
+    const list = filteredTopics.length > 0 ? filteredTopics : topics;
+    if (list.length === 0) return;
     const picked = pickRandomTopic(list);
     handleTopicPress(picked.id);
   };
@@ -103,7 +124,17 @@ export default function TopicsScreen({ navigation, route }: Props) {
   handleAutoSelectRef.current = handleAutoSelect;
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (!canAutoSelectTopic) {
+      if (autoSelectIntervalRef.current) {
+        clearInterval(autoSelectIntervalRef.current);
+        autoSelectIntervalRef.current = null;
+      }
+      setAutoSelectSecondsLeft(30);
+      return;
+    }
+
+    setAutoSelectSecondsLeft(30);
+const interval = setInterval(() => {
       setAutoSelectSecondsLeft((prev) => {
         if (prev <= 1) {
           if (autoSelectIntervalRef.current) {
@@ -123,7 +154,7 @@ export default function TopicsScreen({ navigation, route }: Props) {
         autoSelectIntervalRef.current = null;
       }
     };
-  }, []);
+  }, [canAutoSelectTopic]);
 
   const showSearch = isBattle;
   const buttonsDisabled = pickingOpponentTopic;
@@ -160,7 +191,7 @@ export default function TopicsScreen({ navigation, route }: Props) {
         </View>
       )}
 
-      {!pickingOpponentTopic && (
+      {!pickingOpponentTopic && canAutoSelectTopic && (
         <View style={styles.countdownRow}>
           <Text style={styles.countdownText}>
             Auto-selecting topic in <Text style={styles.countdownNumber}>{autoSelectSecondsLeft}</Text>s
@@ -170,15 +201,31 @@ export default function TopicsScreen({ navigation, route }: Props) {
 
       <View style={styles.autoPickRow}>
         <TouchableOpacity
-          style={[globalStyles.smallButton, styles.autoSelectButtonFlex, buttonsDisabled && globalStyles.controlDisabled]}
+          style={[
+            globalStyles.smallButton,
+            styles.autoSelectButtonFlex,
+            (buttonsDisabled || !canAutoSelectTopic) && globalStyles.controlDisabled,
+          ]}
           onPress={handleAutoSelect}
           activeOpacity={0.8}
-          disabled={buttonsDisabled}
+          disabled={buttonsDisabled || !canAutoSelectTopic}
         >
-          <Text style={[globalStyles.smallButtonText, buttonsDisabled && globalStyles.controlDisabledText]}>🎲 Auto select</Text>
+          <Text
+            style={[
+              globalStyles.smallButtonText,
+              (buttonsDisabled || !canAutoSelectTopic) && globalStyles.controlDisabledText,
+            ]}
+          >
+            🎲 Auto select
+          </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.filterIconBtn, showFavouritesOnly && styles.filterIconBtnSelected, buttonsDisabled && globalStyles.controlDisabled]}
+          style={[
+            triviaTopicStyles.favFilterChip,
+            showFavouritesOnly && triviaTopicStyles.favFilterChipSelected,
+            buttonsDisabled && globalStyles.controlDisabled,
+          ]}
           onPress={() => setShowFavouritesOnly((prev) => !prev)}
           activeOpacity={0.8}
           disabled={buttonsDisabled}
@@ -189,9 +236,9 @@ export default function TopicsScreen({ navigation, route }: Props) {
               size={22}
               color={showFavouritesOnly ? theme.colors.primary : theme.colors.textMuted}
             />
-            {favouriteTopicIds.length > 0 && (
-              <View style={styles.favCountBadge}>
-                <Text style={styles.favCountText}>{favouriteTopicIds.length}</Text>
+            {favouriteListedCount > 0 && (
+              <View style={triviaTopicStyles.favCountBadge}>
+                <Text style={triviaTopicStyles.favCountText}>{favouriteListedCount}</Text>
               </View>
             )}
           </View>
@@ -212,9 +259,17 @@ export default function TopicsScreen({ navigation, route }: Props) {
       )}
 
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {filteredTopics.length === 0 ? (
+        {topicsLoading && topics.length === 0 ? (
+          <View style={styles.topicsLoadingWrap}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : !topicsLoading && topics.length === 0 ? (
           <Text style={globalStyles.emptyState}>
-            {showFavouritesOnly && favouriteTopicIds.length === 0
+            Could not load topics. Check that the API is running and try again.
+          </Text>
+        ) : filteredTopics.length === 0 ? (
+          <Text style={globalStyles.emptyState}>
+            {showFavouritesOnly && favouriteListedCount === 0
               ? 'No favourites yet. Tap the star on a topic to add it.'
               : showFavouritesOnly
               ? 'No favourite topics match your search.'
@@ -231,7 +286,6 @@ export default function TopicsScreen({ navigation, route }: Props) {
                   activeOpacity={0.8}
                   disabled={buttonsDisabled}
                 >
-                  <Text style={styles.topicRowIcon}>{topic.icon}</Text>
                   <Text style={styles.topicRowName}>{topic.name}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -388,6 +442,11 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: theme.spacing.xl,
   },
+  topicsLoadingWrap: {
+  paddingVertical: theme.spacing.xl,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
   topicRow: {
     flexDirection: 'row',
     alignItems: 'center',

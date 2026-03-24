@@ -11,45 +11,49 @@ export type RootStackParamList = {
   Profile: undefined;
   Teams: undefined;
   CreateTeam: { teamId?: string };
-  SelectOpponent: { 
-    battleAgainOpponentName?: string; 
-    wagerAmount?: number; 
-    fromChallenge?: boolean 
-  } | undefined;
-  MatchingOpponent: { 
-    opponentNames: string[]; 
-    wagerAmount?: number; 
-    startInWaitingPhase?: boolean; 
-    fromChallenge?: boolean 
+  SelectOpponent: 
+    | {
+        battleAgainOpponentName?: string;
+        wagerAmount?: number;
+        fromChallenge?: boolean;
+      }
+    | undefined;
+  MatchingOpponent: {
+    opponentNames: string[];
+    wagerAmount?: number;
+    startInWaitingPhase?: boolean;
+    fromChallenge?: boolean;
   };
-  Topics: { 
-    mode?: 'battle'; 
-    yourTopicId?: string; 
-    opponentName?: string; 
-    wagerAmount?: number; 
-    fromArena?: boolean; 
-    arenaId?: string; 
-    fromChallenge?: boolean 
-  } | undefined;
-  Quiz: { 
-    topicId: string; 
-    opponentTopicId?: string; 
-    battleMode?: boolean; 
-    opponentName?: string; 
-    wagerAmount?: number; 
-    arenaId?: string; 
-    fromChallenge?: boolean 
+  Topics:
+    | {
+        mode?: 'battle';
+        yourTopicId?: number;
+        opponentName?: string;
+        wagerAmount?: number;
+        fromArena?: boolean;
+        arenaId?: string;
+        fromChallenge?: boolean;
+      }
+    | undefined;
+  Quiz: {
+    topicId: number;
+    opponentTopicId?: number;
+    battleMode?: boolean;
+    opponentName?: string;
+    wagerAmount?: number;
+    arenaId?: string;
+    fromChallenge?: boolean;
   };
-  Battle: { 
-    topicId: string; 
-    opponentTopicId?: string; 
-    opponentName: string; 
-    wagerAmount: number; 
-    arenaId?: string; 
-    fromChallenge?: boolean 
+  Battle: {
+    topicId: number;
+    opponentTopicId?: number;
+    opponentName: string;
+    wagerAmount: number;
+    arenaId?: string;
+    fromChallenge?: boolean;
   };
   BattleResult: {
-    topicId: string;
+    topicId: number;
     userCorrect: number;
     userTimeMs: number;
     opponentCorrect: number;
@@ -61,23 +65,23 @@ export type RootStackParamList = {
   };
   ArenaResult: {
     arenaId: string;
-    topicId: string;
+    topicId: number;
     userCorrect: number;
     userTimeMs: number;
     questionCount?: number;
   };
-  WaitingForPlayers: 
+  WaitingForPlayers:
     | {
         mode: 'arena';
         arenaId: string;
-        topicId?: string;
+        topicId?: number;
         userCorrect: number;
         userTimeMs: number;
         questionCount?: number;
       }
     | {
         mode: 'battle';
-        topicId: string;
+        topicId: number;
         userCorrect: number;
         userTimeMs: number;
         opponentCorrect: number;

@@ -90,7 +90,7 @@ export default function App() {
             <Stack.Screen
               name="ArenaLobby"
               component={ArenaLobbyScreen}
-              options={(opts) => ({ title: 'Arena', ...homeButtonHeader(opts) })}
+              options={(opts) => ({ title: 'Arena' })}
             />
             <Stack.Screen name="WaitingForPlayers" component={WaitingForPlayersScreen} options={{ title: 'Results', ...noBackButton }} />
             <Stack.Screen name="ArenaResult" component={ArenaResultScreen} options={{ title: 'Arena Results', ...noBackButton }} />

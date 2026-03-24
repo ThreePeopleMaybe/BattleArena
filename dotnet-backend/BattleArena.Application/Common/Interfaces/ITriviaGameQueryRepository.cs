@@ -6,6 +6,6 @@ public interface ITriviaGameQueryRepository
     Task<TriviaGameWinnerData?> GetTriviaGameWinnerAsync(long gameId, CancellationToken cancellationToken = default);
 }
 
-public sealed record ActiveTriviaGameData(long GameId, long UserId, string UserName);
+public sealed record ActiveTriviaGameData(long GameId, long UserId, string UserName, int Wager, string TopicName);
 
 public sealed record TriviaGameWinnerData(long GameId, long UserId, string UserName, int NumberOfCorrectAnswers, int TimeTakenInSeconds);

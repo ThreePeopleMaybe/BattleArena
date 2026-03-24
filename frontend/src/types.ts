@@ -1,18 +1,16 @@
-export type TopicId = 'science' | 'music' | 'biology' | 'history' | 'geography' | 'sports' | 'movies' | 'general';
-
-export interface Topic {
-  id: TopicId;
-  name: string;
-  icon: string;
-  color: string;
-}
+export type TopicId = number;
 
 export interface Question {
-  id: string;
+  id: number;
   topicId: TopicId;
-  question: string;
-  options: string[];
-  correctIndex: number;
+  text: string;
+  choices: QuestionChoice[];
+}
+
+export interface QuestionChoice {
+  id: number;
+  text: string;
+  isCorrectChoice: boolean;
 }
 
 export interface QuizQuestionResult {

@@ -10,6 +10,15 @@ public sealed class QuestionTopicQueryRepository(BattleArenaDbContext dbContext)
     {
         return await dbContext.QuestionTopicCategories
             .AsNoTracking()
+            .OrderBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<QuestionTopic>> GetQuestionTopicsAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.QuestionTopics
+            .AsNoTracking()
+            .OrderBy(t => t.Name)
             .ToListAsync(cancellationToken);
     }
 }

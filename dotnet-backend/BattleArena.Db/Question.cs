@@ -16,7 +16,7 @@ public class Question
     public required QuestionAnswerType AnswerType { get; set; } =  QuestionAnswerType.Text;
 
     [Column("question_topic_id")]
-    public int TopicId { get; set; }
+    public int QuestionTopicId { get; set; }
     public required QuestionTopic Topic { get; set; }
 
     [Column("text", TypeName = "varchar(1032)")]
@@ -36,11 +36,5 @@ public class Question
 
     [Column("points")]
     public int Points { get; set; } = 1;
-
-    [Column("topic_category_id")]
-    public int TopicCategoryId { get; set; }
-
-    [Column("correct_choice_id")]
-    public int CorrectChoiceId { get; set; }
     public ICollection<QuestionChoice>? Choices { get; set; }
 }
