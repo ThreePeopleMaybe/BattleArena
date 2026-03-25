@@ -9,9 +9,12 @@ public class TriviaGameChoice : AuditBase
     [Column("id", Order = 0)]
     public int Id { get; set; }
 
-    [Column("trivia_game_question_id")]
-    public long TriviaGameQuestionId { get; set; }
+    [Column("game_id")]
+    public long GameId { get; set; }
 
-    [Column("answer_id")]
-    public long AnswerId { get; set; }
+    [Column("question_id")]
+    public int QuestionId { get; set; }
+
+    [Column("choice_id")]
+    public int ChoiceId { get; set; }
 }

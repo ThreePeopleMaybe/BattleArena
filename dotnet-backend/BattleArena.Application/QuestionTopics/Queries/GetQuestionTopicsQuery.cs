@@ -1,6 +1,7 @@
 using AutoMapper;
 using BattleArena.Application.Common.Interfaces;
 using MediatR;
+using static BattleArena.Application.Common.Dto;
 
 namespace BattleArena.Application.QuestionTopics.Queries;
 

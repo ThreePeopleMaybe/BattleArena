@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BattleArena.Db;
 
-[Table("trivia_game_result")]
+[Table("trivia_game_results")]
 public class TriviaGameResult : AuditBase
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

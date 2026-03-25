@@ -13,7 +13,6 @@ import MatchingOpponentScreen from './src/screens/MatchingOpponentScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import SelectOpponentScreen from './src/screens/SelectOpponentScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
-import TeamsScreen from './src/screens/TeamsScreen';
 import ArenaHomeScreen from './src/screens/trivia/ArenaHomeScreen';
 import ArenaLobbyScreen from './src/screens/trivia/ArenaLobbyScreen';
 import ArenaResultScreen from './src/screens/trivia/ArenaResultScreen';
@@ -69,7 +68,6 @@ export default function App() {
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Log in', ...noBackButton }} />
             <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: 'Sign up', ...noBackButton }} />
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
-            <Stack.Screen name="Teams" component={TeamsScreen} options={{ title: 'My teams' }} />
             <Stack.Screen
               name="SelectOpponent"
               component={SelectOpponentScreen}

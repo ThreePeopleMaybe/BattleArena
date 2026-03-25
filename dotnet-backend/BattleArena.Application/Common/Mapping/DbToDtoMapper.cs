@@ -1,9 +1,8 @@
 using AutoMapper;
-using BattleArena.Application.Common.Interfaces;
 using BattleArena.Application.TriviaGames.Queries;
 using BattleArena.Db;
 using BattleArena.Domain.Models;
-
+using static BattleArena.Application.Common.Dto;
 namespace BattleArena.Application.Common.Mapping;
 
 public sealed class DbToDtoMapper : Profile

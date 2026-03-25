@@ -1,7 +1,7 @@
 using AutoMapper;
 using BattleArena.Application.Common.Interfaces;
 using MediatR;
-
+using static BattleArena.Application.Common.Dto;
 namespace BattleArena.Application.Users.Queries;
 
 public sealed record GetPlayerByUserNameQuery(string UserName, int GameTypeId) : IRequest<PlayerDto?>;

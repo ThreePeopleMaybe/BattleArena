@@ -1,6 +1,7 @@
 using BattleArena.Application.TriviaGames.Commands;
 using BattleArena.Application.TriviaGames.Queries;
 using MediatR;
+using static BattleArena.Application.Common.Dto;
 
 namespace BattleArena.Api;
 
@@ -23,15 +24,19 @@ public static class TriviaGameApi
             .Produces<TriviaGameWinnerDto>()
             .Produces(StatusCodes.Status404NotFound);
 
+        group.MapGet("{gameId:long}", GetTriviaGameById)
+            .Produces<IReadOnlyList<QuestionDto>>()
+            .Produces(StatusCodes.Status404NotFound);
+
         return group;
     }
-
     static async Task<IResult> InsertTriviaGameResult(CreateTriviaGameResultRequest request, ISender sender, CancellationToken cancellationToken)
     {
         var id = await sender.Send(
             new InsertTriviaGameResultCommand(
                 request.GameId,
                 request.UserId,
+                request.TopicId,
                 request.NumberOfCorrectAnswers,
                 request.TimeTakenInSeconds,
                 request.Details),
@@ -43,7 +48,7 @@ public static class TriviaGameApi
     static async Task<IResult> CreateTriviaGame(CreateTriviaGameRequest request, ISender sender, CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateTriviaGameCommand(request.GameTypeId, request.Wager, request.TopicId),
+            new CreateTriviaGameCommand(request.GameTypeId, request.WagerAmount, request.TopicId),
             cancellationToken);
 
         return Results.Created($"/api/v1/trivia-games/{result.GameId}", result);
@@ -60,13 +65,20 @@ public static class TriviaGameApi
         var winner = await sender.Send(new GetTriviaGameWinnerQuery(gameId), cancellationToken);
         return winner is null ? Results.NotFound() : Results.Ok(winner);
     }
+
+    static async Task<IResult> GetTriviaGameById(long gameId, ISender sender, CancellationToken cancellationToken)
+    {
+        var triviaGame = await sender.Send(new GetTriviaGameQuestionsByGameIdQuery(gameId), cancellationToken);
+        return triviaGame is null ? Results.NotFound() : Results.Ok(triviaGame);
+    }
 }
 
 public sealed record CreateTriviaGameResultRequest(
     long GameId,
     long UserId,
+    int TopicId,
     int NumberOfCorrectAnswers,
     int TimeTakenInSeconds,
     IReadOnlyList<TriviaGameResultDetailDto> Details);
 
-public sealed record CreateTriviaGameRequest(int GameTypeId, int Wager, int TopicId);
+public sealed record CreateTriviaGameRequest(int GameTypeId, int WagerAmount, int TopicId);

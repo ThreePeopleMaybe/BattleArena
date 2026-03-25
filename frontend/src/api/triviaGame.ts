@@ -1,72 +1,54 @@
-import { Question } from '../types';
+import type { ActiveTriviaGame, Question, QuizResult } from '../types';
 import { battleArenaClient } from './battleArenaClient';
 
-export interface ApiQuestionChoiceDto {
-  id: number;
-  text: string;
-  isCorrectChoice: boolean;
-}
-
-export interface ApiQuestionDto {
-  id: number;
-  text: string;
-  correctChoiceId: number;
-  choices: ApiQuestionChoiceDto[];
-}
-
 export interface CreateTriviaGameResponse {
-  gameId: number;
-  questions: Question[];
-  triviaGameQuestionIdsByQuestionId: Record<string, number>;
+    gameId: number;
+    questions: Question[];
 }
 
 export async function createTriviaGame(params: {
-  gameTypeId: number;
-  wager: number;
-  topicCategoryIds: number[];
+    gameTypeId: number;
+    wagerAmount: number;
+    topicId: number;
 }): Promise<CreateTriviaGameResponse> {
-  const { data } = await battleArenaClient.post<CreateTriviaGameResponse>('/api/v1/trivia-games/create', {
-    gameTypeId: params.gameTypeId,
-    wager: params.wager,
-    topicCategoryIds: params.topicCategoryIds,
-  });
+    const { data } = await battleArenaClient.post<CreateTriviaGameResponse>('/api/v1/trivia-games/create', {
+        gameTypeId: params.gameTypeId,
+        wagerAmount: params.wagerAmount,
+        topicId: params.topicId,
+    });
 
-  return {
-    gameId: Number(data.gameId),
-    questions: Array.isArray(data.questions) ? data.questions : [],
-    triviaGameQuestionIdsByQuestionId:
-      data.triviaGameQuestionIdsByQuestionId && typeof data.triviaGameQuestionIdsByQuestionId === 'object'
-        ? data.triviaGameQuestionIdsByQuestionId
-        : {},
-  };
+    return {
+        gameId: Number(data.gameId),
+        questions: Array.isArray(data.questions) ? data.questions : [],
+    };
 }
 
 export async function insertTriviaGameResult(payload: {
-  gameId: number;
-  userId: number;
-  numberOfCorrectAnswers: number;
-  timeTakenInSeconds: number;
+    gameId: number;
+    userId: number;
+    topicId: number;
+    numberOfCorrectAnswers: number;
+    timeTakenInSeconds: number;
+    details: QuizResult[];
 }): Promise<number> {
-  const { data } = await battleArenaClient.post<number>('/api/v1/trivia-games/results', {
-    gameId: payload.gameId,
-    userId: payload.userId,
-    numberOfCorrectAnswers: payload.numberOfCorrectAnswers,
-    timeTakenInSeconds: payload.timeTakenInSeconds,
-  });
+    const { data } = await battleArenaClient.post<number>('/api/v1/trivia-games/results', {
+        gameId: payload.gameId,
+        userId: payload.userId,
+        topicId: payload.topicId,
+        numberOfCorrectAnswers: payload.numberOfCorrectAnswers,
+        timeTakenInSeconds: payload.timeTakenInSeconds,
+        details: payload.details,
+    });
 
-  return typeof data === 'number' ? data : Number(data);
+    return typeof data === 'number' ? data : Number(data);
 }
 
-export interface ActiveTriviaGameResultDto {
-  gameId: number;
-  userId: number;
-  userName: string;
-  wager: number;
-  topicId: number;
-  topicName: string;
+export async function getActiveTriviaGame(gameTypeId: number): Promise<ActiveTriviaGame[]> {
+    const { data } = await battleArenaClient.get<ActiveTriviaGame[]>(`/api/v1/trivia-games/active/${gameTypeId}`);
+    return Array.isArray(data) ? data : [];
 }
 
-export async function getActiveTriviaGame(gameTypeId: number): Promise<ActiveTriviaGameResultDto[]> {
-  const { data } = await battleArenaClient.get<ActiveTriviaGameResultDto[]>(`/api/v1/trivia-games/active/${gameTypeId}`);
-  return Array.isArray(data) ? data : [];
+export async function getTriviaGameQuestionsByGameId(gameId: number): Promise<Question[]> {
+    const { data } = await battleArenaClient.get<Question[]>(`/api/v1/trivia-games/${gameId}`);
+    return Array.isArray(data) ? data : [];
 }

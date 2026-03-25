@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function BattleScreen({ navigation, route }: Props) {
-  const { topicId, opponentTopicId, opponentName, wagerAmount, arenaId, fromChallenge } = route.params;
+  const { topicId, opponentTopicId, opponentName, wagerAmount, arenaId, fromChallenge, gameId } = route.params;
   const [countdown, setCountdown] = useState(START_COUNTDOWN_SEC);
   const started = useRef(false);
 
@@ -28,7 +28,8 @@ export default function BattleScreen({ navigation, route }: Props) {
       opponentName,
       wagerAmount: (wagerAmount ?? 0) > 0 ? wagerAmount : undefined,
       arenaId,
-      fromChallenge
+      fromChallenge,
+      gameId
     });
   };
 

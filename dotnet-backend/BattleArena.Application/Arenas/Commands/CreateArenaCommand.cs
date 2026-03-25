@@ -1,4 +1,5 @@
 using BattleArena.Application.Common.Interfaces;
+using static BattleArena.Application.Common.Dto;
 using MediatR;
 
 namespace BattleArena.Application.Arenas.Commands;

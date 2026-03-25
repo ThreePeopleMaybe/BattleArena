@@ -1,7 +1,7 @@
 using BattleArena.Application.Arenas.Commands;
 using BattleArena.Application.Common.Interfaces;
 using MediatR;
-
+using static BattleArena.Application.Common.Dto;
 namespace BattleArena.Api;
 
 public static class ArenaApi

@@ -107,8 +107,7 @@ export default function BattleResultScreen({ navigation, route }: Props) {
           } else {
             navigation.navigate('SelectOpponent', { 
               battleAgainOpponentName: opponentName, 
-              wagerAmount, 
-              fromChallenge: false 
+              wagerAmount
             });
           }
         }}
