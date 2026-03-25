@@ -16,4 +16,4 @@ public sealed class GetActiveTriviaGameQueryHandler(ITriviaGameQueryRepository t
     }
 }
 
-public sealed record ActiveTriviaGameDto(long GameId, long UserId, string UserName, int Wager, string TopicName);
+public sealed record ActiveTriviaGameDto(long GameId, long UserId, string UserName, int Wager, int TopicId, string TopicName);

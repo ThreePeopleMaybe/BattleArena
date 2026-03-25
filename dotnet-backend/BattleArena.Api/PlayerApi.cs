@@ -2,7 +2,7 @@ using BattleArena.Application.Common.Interfaces;
 using BattleArena.Application.Users.Commands;
 using BattleArena.Application.Users.Queries;
 using MediatR;
-
+using static BattleArena.Application.Common.Dto;
 namespace BattleArena.Api;
 
 public static class PlayerApi

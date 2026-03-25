@@ -11,5 +11,3 @@ public interface IArenaCommandRepository
     Task<bool> DeleteArenaAsync(int arenaId, CancellationToken cancellationToken = default);
     Task<bool> DeleteArenaPlayerAsync(int arenaPlayerId, CancellationToken cancellationToken = default);
 }
-
-public sealed record ArenaDto(int Id, string ArenaName, string ArenaCode, int ArenaOwner, ArenaStatus Status);

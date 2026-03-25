@@ -1,7 +1,6 @@
-using BattleArena.Application.Common.Interfaces;
 using BattleArena.Application.Questions.Queries;
 using MediatR;
-
+using static BattleArena.Application.Common.Dto;
 namespace BattleArena.Api;
 
 public static class QuestionApi

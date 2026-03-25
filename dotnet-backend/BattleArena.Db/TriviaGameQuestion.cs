@@ -7,7 +7,7 @@ public class TriviaGameQuestion : AuditBase
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("id", Order = 0)]
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     [Column("game_id")]
     public long GameId { get; set; }

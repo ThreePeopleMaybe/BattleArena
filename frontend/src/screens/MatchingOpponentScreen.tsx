@@ -20,7 +20,7 @@ function pickRandom<T>(arr: T[]): T {
 }
 
 export default function MatchingOpponentScreen({ navigation, route }: Props) {
-  const { opponentNames, wagerAmount, startInWaitingPhase, fromChallenge } = route.params;
+  const { opponentNames, wagerAmount, startInWaitingPhase } = route.params;
   const [currentOpponent, setCurrentOpponent] = useState<string>(() => 
     opponentNames.length > 0 ? (startInWaitingPhase ? opponentNames[0] : pickRandom(opponentNames)) : ''
   );
@@ -84,7 +84,7 @@ export default function MatchingOpponentScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (phase !== 'waitingForOpponent') return;
     const timer = setTimeout(() => {
-      navigation.replace('Topics', { mode: 'battle', opponentName: currentOpponent, wagerAmount, fromChallenge });
+      navigation.replace('Topics', { mode: 'battle', opponentName: currentOpponent, wagerAmount });
     }, OPPONENT_ACCEPT_SIMULATED_MS);
     return () => clearTimeout(timer);
   }, [phase, currentOpponent, wagerAmount, navigation]);

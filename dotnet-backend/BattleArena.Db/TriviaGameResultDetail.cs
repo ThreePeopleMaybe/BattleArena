@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BattleArena.Db;
 
-[Table("trivia_game_result_detail")]
+[Table("trivia_game_result_details")]
 public class TriviaGameResultDetail : AuditBase
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -16,8 +16,8 @@ public class TriviaGameResultDetail : AuditBase
     public long UserId { get; set; }
 
     [Column("question_id")]
-    public long QuestionId { get; set; }
+    public int QuestionId { get; set; }
 
-    [Column("answer_id")]
-    public long AnswerId { get; set; }
+    [Column("Choice_id")]
+    public int ChoiceId { get; set; }
 }

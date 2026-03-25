@@ -1,5 +1,4 @@
 import type { Opponent } from '../data/opponents';
-import { API_BASE_URL } from './config';
 import { OPPONENTS } from '../data/opponents';
 
 export type { Opponent };

@@ -1,52 +1,62 @@
 using BattleArena.Application.Common.Interfaces;
-using BattleArena.Application.Games.Commands;
-using MediatR;
-using System.Transactions;
 using BattleArena.Db;
+using MediatR;
 
 namespace BattleArena.Application.TriviaGames.Commands;
 
 public sealed record InsertTriviaGameResultCommand(
     long GameId,
     long UserId,
+    int TopicId,
     int NumberOfCorrectAnswers,
     int TimeTakenInSeconds,
     IReadOnlyList<TriviaGameResultDetailDto> Details) : IRequest<long>;
 
-public sealed class InsertTriviaGameResultCommandHandler(ITriviaGameCommandRepository triviaGameCommandRepository, ISender sender)
+public sealed class InsertTriviaGameResultCommandHandler(
+    ITriviaGameCommandRepository triviaGameCommandRepository,
+    ISender sender,
+    BattleArenaDbContext dbContext)
     : IRequestHandler<InsertTriviaGameResultCommand, long>
 {
     public async Task<long> Handle(InsertTriviaGameResultCommand request, CancellationToken cancellationToken)
     {
-        using var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+        var strategy = dbContext.Database.CreateExecutionStrategy();
 
-        await sender.Send(new FinishGameCommand(request.GameId), cancellationToken);
+        return await strategy.ExecuteAsync(
+            state: request,
+            operation: async (_, _, ct) =>
+            {
+                await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
 
-        var id = await triviaGameCommandRepository.InsertTriviaGameResultAsync(
-            request.GameId,
-            request.UserId,
-            request.NumberOfCorrectAnswers,
-            request.TimeTakenInSeconds,
-            cancellationToken);
+                var id = await triviaGameCommandRepository.InsertTriviaGameResultAsync(
+                    request.GameId,
+                    request.UserId,
+                    request.TopicId,
+                    request.NumberOfCorrectAnswers,
+                    request.TimeTakenInSeconds,
+                    cancellationToken);
 
-        var details = request.Details.Select(d => new TriviaGameResultDetail
-        {
-            QuestionId = d.TriviaGameQuestionId,
-            AnswerId = d.TriviaGameAnswerId,
-            GameId = request.GameId,
-            UserId = request.UserId,
-            UpdatedBy = "system",
-            UpdatedAt = DateTime.UtcNow,
-            CreatedBy = "system",
-            CreatedAt = DateTime.UtcNow,
-        }).ToList();
+                var details = request.Details.Select(d => new TriviaGameResultDetail
+                {
+                    QuestionId = d.QuestionId,
+                    ChoiceId = d.ChoiceId,
+                    GameId = request.GameId,
+                    UserId = request.UserId,
+                    UpdatedBy = "system",
+                    UpdatedAt = DateTime.UtcNow,
+                    CreatedBy = "system",
+                    CreatedAt = DateTime.UtcNow,
+                }).ToList();
 
-        await triviaGameCommandRepository.InsertTriviaGameResultDetailAsync(details, cancellationToken);
+                await triviaGameCommandRepository.InsertTriviaGameResultDetailAsync(details, cancellationToken);
 
-        transactionScope.Complete();
+                await transaction.CommitAsync(ct);
 
-        return id;
+                return id;
+            },
+            verifySucceeded: null,
+            cancellationToken: cancellationToken);
     }
 }
 
-public sealed record TriviaGameResultDetailDto(long TriviaGameQuestionId, long TriviaGameAnswerId);
+public sealed record TriviaGameResultDetailDto(int QuestionId, int ChoiceId);

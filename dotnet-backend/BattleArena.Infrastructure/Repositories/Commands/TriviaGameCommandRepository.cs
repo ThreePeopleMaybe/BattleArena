@@ -1,20 +1,21 @@
 using BattleArena.Application.Common.Interfaces;
 using BattleArena.Db;
+using static BattleArena.Application.Common.Dto;
 
 namespace BattleArena.Infrastructure.Repositories.Commands;
 
 public class TriviaGameCommandRepository(BattleArenaDbContext dbContext) : ITriviaGameCommandRepository
 {
-    public async Task<Dictionary<int, int>> InsertTriviaGameQuestionAsync(long gameId, List<int> questionIds, CancellationToken cancellationToken = default)
+    public async Task InsertTriviaGameQuestionAsync(long gameId, IReadOnlyList<QuestionDto> questions, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         var entities = new List<TriviaGameQuestion>();
-        foreach (var questionId in questionIds)
+        foreach (var question in questions)
         {
             var entity = new TriviaGameQuestion
             {
                 GameId = gameId,
-                QuestionId = questionId,
+                QuestionId = question.Id,
                 CreatedBy = "system",
                 CreatedAt = now,
                 UpdatedBy = "system",
@@ -25,27 +26,21 @@ public class TriviaGameCommandRepository(BattleArenaDbContext dbContext) : ITriv
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return entities.ToDictionary(e => e.QuestionId, e => e.Id);
     }
-    public async Task InsertTriviaGameChoiceAsync(Dictionary<int, int> triviaGameQuestions, IReadOnlyList<QuestionDto> questions, CancellationToken cancellationToken = default)
+
+    public async Task InsertTriviaGameChoiceAsync(long gameId, IReadOnlyList<QuestionDto> questions, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        var questionsById = questions.ToDictionary(q => q.Id);
 
         foreach (var question in questions)
         {
-            if (!triviaGameQuestions.ContainsKey(question.Id))
-            {
-                continue;
-            }
-
             foreach (var answer in question.Choices ?? [])
             {
                 var choiceEntity = new TriviaGameChoice
                 {
-                    TriviaGameQuestionId = triviaGameQuestions[question.Id],
-                    AnswerId = answer.Id,
+                    GameId = gameId,
+                    QuestionId = question.Id,
+                    ChoiceId = answer.Id,
                     CreatedBy = "system",
                     CreatedAt = now,
                     UpdatedBy = "system",
@@ -57,13 +52,15 @@ public class TriviaGameCommandRepository(BattleArenaDbContext dbContext) : ITriv
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
-    public async Task<long> InsertTriviaGameResultAsync(long gameId, long userId, int numberOfCorrectAnswers, int timeTakenInSeconds, CancellationToken cancellationToken = default)
+
+    public async Task<long> InsertTriviaGameResultAsync(long gameId, long userId, int topicId, int numberOfCorrectAnswers, int timeTakenInSeconds, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         var entity = new TriviaGameResult
         {
             GameId = gameId,
             UserId = userId,
+            QuestionTopicId = topicId,
             NumerOfCorrectAnswers = numberOfCorrectAnswers,
             TimeTakenInSeconds = timeTakenInSeconds,
             CreatedBy = "system",

@@ -6,99 +6,194 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace BattleArena.DbManager.Migrations
 {
-    /// <inheritdoc />
     public partial class Initial : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "arenas",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
+                    created_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
+                    updated_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    arena_name = table.Column<string>(type: "text", nullable: false),
+                    arena_code = table.Column<string>(type: "text", nullable: false),
+                    arena_owner = table.Column<int>(type: "integer", nullable: false),
+                    status = table.Column<string>(type: "varchar(32)", nullable: false)
+                },
+                constraints: table => { table.PrimaryKey("PK_arenas", x => x.id); });
+
+            migrationBuilder.CreateTable(
+                name: "arena_players",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
+                    created_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
+                    updated_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    arena_id = table.Column<int>(type: "integer", nullable: false),
+                    user_id = table.Column<int>(type: "integer", nullable: false),
+                    status = table.Column<string>(type: "varchar(32)", nullable: false)
+                },
+                constraints: table => { table.PrimaryKey("PK_arena_players", x => x.id); });
+
+            migrationBuilder.CreateTable(
+                name: "trivia_game_questions",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    game_id = table.Column<long>(type: "bigint", nullable: false),
+                    question_id = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    created_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    updated_by = table.Column<string>(type: "varchar(255)", nullable: false)
+                },
+                constraints: table => { table.PrimaryKey("PK_trivia_game_questions", x => x.id); });
+
+            migrationBuilder.CreateTable(
+                name: "trivia_game_choices",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    game_id = table.Column<long>(type: "bigint", nullable: false),
+                    question_id = table.Column<int>(type: "integer", nullable: false),
+                    choice_id = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    created_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    updated_by = table.Column<string>(type: "varchar(255)", nullable: false)
+                },
+                constraints: table => { table.PrimaryKey("PK_trivia_game_choices", x => x.id); });
+
+            migrationBuilder.CreateTable(
+                name: "trivia_game_results",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    game_id = table.Column<long>(type: "bigint", nullable: false),
+                    user_id = table.Column<long>(type: "bigint", nullable: false),
+                    question_topic_id = table.Column<int>(type: "integer", nullable: false),
+                    number_of_correct_answers = table.Column<int>(type: "integer", nullable: false),
+                    time_taken_in_seconds = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    created_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    updated_by = table.Column<string>(type: "varchar(255)", nullable: false)
+                },
+                constraints: table => { table.PrimaryKey("PK_trivia_game_results", x => x.id); });
+
+            migrationBuilder.CreateTable(
+                name: "trivia_game_result_details",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    game_id = table.Column<long>(type: "bigint", nullable: false),
+                    user_id = table.Column<long>(type: "bigint", nullable: false),
+                    question_id = table.Column<int>(type: "integer", nullable: false),
+                    choice_id = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    created_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    updated_by = table.Column<string>(type: "varchar(255)", nullable: false)
+                },
+                constraints: table => { table.PrimaryKey("PK_trivia_game_result_details", x => x.id); });
+
             migrationBuilder.CreateTable(
                 name: "game_types",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     game_name = table.Column<string>(type: "varchar(100)", nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_game_types", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_game_types", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "games",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     updated_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     game_type_id = table.Column<int>(type: "integer", nullable: false),
+                    wager = table.Column<int>(type: "integer", nullable: false),
                     game_status = table.Column<string>(type: "varchar(32)", nullable: false),
                     started_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     ended_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_games", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_games", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "organizations",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     updated_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     name = table.Column<string>(type: "varchar(512)", nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_organizations", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_organizations", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "question_topic_categories",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     name = table.Column<string>(type: "varchar(128)", nullable: false),
                     description = table.Column<string>(type: "varchar(512)", nullable: true)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_question_topic_categories", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_question_topic_categories", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "teams",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     updated_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     name = table.Column<string>(type: "varchar(255)", nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_teams", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_teams", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "active_players",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
@@ -108,10 +203,7 @@ namespace BattleArena.DbManager.Migrations
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
                     is_playing = table.Column<bool>(type: "boolean", nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_active_players", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_active_players", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "favorite_players",
@@ -119,7 +211,8 @@ namespace BattleArena.DbManager.Migrations
                 {
                     user_id = table.Column<int>(type: "integer", nullable: false),
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
@@ -127,48 +220,42 @@ namespace BattleArena.DbManager.Migrations
                     game_type_id = table.Column<int>(type: "integer", nullable: false),
                     favorite_user_id = table.Column<int>(type: "integer", nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_favorite_players", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_favorite_players", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "wagers",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     user_id = table.Column<long>(type: "bigint", nullable: false),
                     game_type_id = table.Column<int>(type: "integer", nullable: false),
                     wager_amount = table.Column<int>(type: "integer", nullable: true)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_wagers", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_wagers", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "wins_losses",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     user_id = table.Column<long>(type: "bigint", nullable: false),
                     game_type_id = table.Column<int>(type: "integer", nullable: false),
                     wins = table.Column<int>(type: "integer", nullable: false),
                     losses = table.Column<int>(type: "integer", nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_wins_losses", x => x.id);
-                });
+                constraints: table => { table.PrimaryKey("PK_wins_losses", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "organization_venues",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
@@ -193,7 +280,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
@@ -221,7 +309,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     name = table.Column<string>(type: "varchar(128)", nullable: false),
                     description = table.Column<string>(type: "varchar(512)", nullable: true),
                     question_topic_category_id = table.Column<int>(type: "integer", nullable: false)
@@ -242,7 +331,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
@@ -266,7 +356,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
@@ -297,7 +388,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
@@ -328,7 +420,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     number = table.Column<int>(type: "integer", nullable: false),
                     game_id = table.Column<int>(type: "integer", nullable: false),
                     question_topic_id = table.Column<int>(type: "integer", nullable: false),
@@ -359,7 +452,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     question_type = table.Column<string>(type: "varchar(32)", nullable: false),
                     question_answer_type = table.Column<string>(type: "varchar(32)", nullable: false),
                     question_topic_id = table.Column<int>(type: "integer", nullable: false),
@@ -386,10 +480,11 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     question_id = table.Column<int>(type: "integer", nullable: false),
                     position = table.Column<int>(type: "integer", nullable: false),
-                    choice = table.Column<string>(type: "varchar(1032)", nullable: false),
+                    text = table.Column<string>(type: "varchar(1032)", nullable: false),
                     is_correct_choice = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
@@ -408,7 +503,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     game_round_id = table.Column<int>(type: "integer", nullable: false),
                     question_id = table.Column<int>(type: "integer", nullable: false),
                     team_id = table.Column<int>(type: "integer", nullable: true),
@@ -447,7 +543,8 @@ namespace BattleArena.DbManager.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     game_round_id = table.Column<int>(type: "integer", nullable: false),
                     question_id = table.Column<int>(type: "integer", nullable: false),
                     player_id = table.Column<int>(type: "integer", nullable: false),
@@ -601,9 +698,14 @@ namespace BattleArena.DbManager.Migrations
                 unique: true);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(name: "arenas");
+            migrationBuilder.DropTable(name: "arena_players");
+            migrationBuilder.DropTable(name: "trivia_game_choices");
+            migrationBuilder.DropTable(name: "trivia_game_questions");
+            migrationBuilder.DropTable(name: "trivia_game_result_details");
+            migrationBuilder.DropTable(name: "trivia_game_results");
             migrationBuilder.DropTable(name: "game_round_answers");
             migrationBuilder.DropTable(name: "game_round_answer_votes");
             migrationBuilder.DropTable(name: "active_players");

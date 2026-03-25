@@ -10,7 +10,6 @@ public sealed class InsertGameCommandHandler(IGameCommandRepository gameCommandR
 {
     public Task<long> Handle(InsertGameCommand request, CancellationToken cancellationToken)
     {
-        // delegates to the repository to create the game record and return the new ID
         return gameCommandRepository.InsertGameAsync(request.GameTypeId, request.Wager, cancellationToken);
     }
 }
