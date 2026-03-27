@@ -153,7 +153,7 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
         <View style={styles.wagerDisplayRow}>
           <View style={styles.wagerSpacer} />
           <View style={styles.wagerCenterSection}>
-            <Text style={styles.wagerLabel}>{isLoggedIn ? '' : 'Wager'}</Text>
+            <Text style={styles.wagerLabel}>{!isLoggedIn ? '' : 'Wager'}</Text>
             <View style={[styles.wagerChip, styles.wagerChipDisplay, styles.wagerChipReadOnly]}>
               <Text style={[styles.wagerChipText, styles.wagerChipTextReadOnly]}>
                 {arena.wagerAmount === 0 ? 'None' : `$${arena.wagerAmount}`}
@@ -206,11 +206,11 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
             <View key={m.userId} style={styles.memberRow}>
               <Ionicons name="person" size={20} color={theme.colors.primary} />
               <Text style={styles.memberName}>{m.userName}</Text>
-              {m.isHost && (
+              {m.isHost ? (
                 <View style={styles.hostBadge}>
                   <Text style={styles.hostBadgeText}>Host</Text>
                 </View>
-              )}
+              ) : null}
             </View>
           ))}
         </View>

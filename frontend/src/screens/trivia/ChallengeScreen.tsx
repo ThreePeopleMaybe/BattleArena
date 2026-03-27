@@ -263,7 +263,7 @@ export default function ChallengeScreen({ navigation, route }: Props) {
         arenaId: arenaId,
       });
     },
-    [isLoggedIn, effectiveWager, navigation, arenaId]
+    [isLoggedIn, effectiveWager, navigation]
   );
 
   const canStartNewBattle = useMemo(() => {
@@ -601,7 +601,6 @@ export default function ChallengeScreen({ navigation, route }: Props) {
       </Pressable>
     </Modal>
 
-    {/* Wager Selection Modal */}
     <Modal
       visible={showWagerControls && wagerModalVisible}
       transparent
@@ -715,7 +714,6 @@ export default function ChallengeScreen({ navigation, route }: Props) {
       </Pressable>
     </Modal>
 
-    {/* New Battle Button */}
     <View style={styles.newBattleRow}>
       <TouchableOpacity
         style={[styles.newBattleButton, !canStartNewBattle && styles.newBattleButtonDisabled]}
@@ -727,7 +725,6 @@ export default function ChallengeScreen({ navigation, route }: Props) {
       </TouchableOpacity>
     </View>
 
-    {/* Active Games List / Empty States */}
     {filteredActiveTriviaGames.length === 0 ? (
       <View style={styles.emptyStateContainer}>
         {activeTriviaGamesError ? (
@@ -1010,6 +1007,7 @@ filterButtonText: {
     borderWidth: 1,
     borderColor: theme.colors.surfaceLight,
     fontSize: theme.fontSize.md,
+    color: theme.colors.text,
   },
   topicList: {
     maxHeight: 300,

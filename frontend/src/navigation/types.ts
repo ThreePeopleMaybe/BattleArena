@@ -4,7 +4,7 @@ export type RootStackParamList = {
     Home: undefined;
     Challenge: 
         | {
-            arenaId: number;
+            arenaId?: number;
         }
         | undefined;
     ArenaHome: undefined;

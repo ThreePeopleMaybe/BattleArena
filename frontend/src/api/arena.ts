@@ -11,7 +11,7 @@ export async function getArenaById(arenaId: number): Promise<Arena | null> {
     };
   } catch (e) {
     if (isBattleArenaApiError(e) && e.status === 404) return null;
-    throw e;;
+    throw e;
   }
 }
 
@@ -41,7 +41,7 @@ export async function getArenasByUser(userId: number): Promise<Arena[]> {
 }
 
 export async function joinArena(arenaCode: string, userId: number): Promise<number> {
-    const { data } =await battleArenaClient.post<unknown>('/api/v1/arenas/join', {
+    const { data } =await battleArenaClient.post<number>('/api/v1/arenas/join', {
       arenaCode,
       userId,
     });
