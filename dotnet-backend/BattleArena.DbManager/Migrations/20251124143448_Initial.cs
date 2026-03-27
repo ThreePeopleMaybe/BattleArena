@@ -91,7 +91,7 @@ namespace BattleArena.DbManager.Migrations
                     question_topic_id = table.Column<int>(type: "integer", nullable: false),
                     number_of_correct_answers = table.Column<int>(type: "integer", nullable: false),
                     time_taken_in_seconds = table.Column<int>(type: "integer", nullable: false),
-                    is_winner = table.Column<bool>(type: "boolean", nullable: false),
+                    is_winner = table.Column<bool>(type: "boolean", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
