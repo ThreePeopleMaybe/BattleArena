@@ -48,7 +48,7 @@ export async function insertTriviaGameResult(payload: {
 }
 
 export async function getActiveTriviaGame(gameTypeId: number, arenaId: number = 0): Promise<ActiveTriviaGame[]> {
-    const { data } = await battleArenaClient.get<ActiveTriviaGame[]>(`/api/v1/trivia-games/active/${gameTypeId}`);
+    const { data } = await battleArenaClient.get<ActiveTriviaGame[]>(`/api/v1/trivia-games/active/${gameTypeId}/${arenaId}`);
     return Array.isArray(data) ? data : [];
 }
 
