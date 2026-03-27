@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<IUserQueryRepository, UserQueryRepository>();
         services.AddScoped<IUserCommandRepository, UserCommandRepository>();
         services.AddScoped<IArenaCommandRepository, ArenaCommandRepository>();
+        services.AddScoped<IArenaQueryRepository, ArenaQueryRepository>();
         services.AddScoped<IGameCommandRepository, GameCommandRepository>();
         services.AddScoped<ITriviaGameCommandRepository, TriviaGameCommandRepository>();
         services.AddScoped<ITriviaGameQueryRepository, TriviaGameQueryRepository>();

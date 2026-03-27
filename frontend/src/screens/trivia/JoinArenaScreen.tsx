@@ -7,9 +7,9 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import { joinArena } from '../../api/arena';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
-import { joinArena } from '../../storage/arenaStorage';
 import { globalStyles } from '../../styles/globalStyles';
 import { theme } from '../../theme';
 
@@ -35,14 +35,16 @@ export default function JoinArenaScreen({ navigation }: Props) {
       return;
     }
 
-    const memberId = user.email;
-    const displayName = user.email.split('@')[0] || user.email;
+    if(user.userId === null) {
+      setError('Sign in again to join an arena.');
+      return;
+    }
 
     setLoading(true);
     try {
-      const arena = await joinArena(trimmedCode, memberId, displayName);
-      if (arena) {
-        navigation.replace('ArenaLobby', { arenaId: arena.id });
+      const id = await joinArena(trimmedCode, user.userId);
+      if (id) {
+        navigation.replace('Challenge', { arenaId: id });
       } else {
         setError('Invalid or expired code. Please check and try again.');
       }

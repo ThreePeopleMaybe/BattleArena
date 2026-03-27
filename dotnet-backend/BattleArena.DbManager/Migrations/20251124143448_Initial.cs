@@ -24,6 +24,7 @@ namespace BattleArena.DbManager.Migrations
                     arena_name = table.Column<string>(type: "text", nullable: false),
                     arena_code = table.Column<string>(type: "text", nullable: false),
                     arena_owner = table.Column<int>(type: "integer", nullable: false),
+                    wager_amount = table.Column<int>(type: "integer", nullable: false),
                     status = table.Column<string>(type: "varchar(32)", nullable: false)
                 },
                 constraints: table => { table.PrimaryKey("PK_arenas", x => x.id); });
@@ -90,6 +91,7 @@ namespace BattleArena.DbManager.Migrations
                     question_topic_id = table.Column<int>(type: "integer", nullable: false),
                     number_of_correct_answers = table.Column<int>(type: "integer", nullable: false),
                     time_taken_in_seconds = table.Column<int>(type: "integer", nullable: false),
+                    is_winner = table.Column<bool>(type: "boolean", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
                     created_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
@@ -138,6 +140,7 @@ namespace BattleArena.DbManager.Migrations
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),
                     updated_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     game_type_id = table.Column<int>(type: "integer", nullable: false),
+                    arena_id = table.Column<int>(type: "integer", nullable: false),
                     wager = table.Column<int>(type: "integer", nullable: false),
                     game_status = table.Column<string>(type: "varchar(32)", nullable: false),
                     started_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: false),

@@ -19,6 +19,9 @@ public class Arena : AuditBase
     [Column("arena_owner")]
     public int ArenaOwner { get; set; }
 
+    [Column("wager_amount")]
+    public int WagerAmount { get; set; }
+
     [Column("status")]
     public ArenaStatus Status { get; set; } = ArenaStatus.New;
 }

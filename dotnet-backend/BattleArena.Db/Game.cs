@@ -11,6 +11,8 @@ public class Game : AuditBase
 
     [Column("game_type_id", TypeName = "int")]
     public int GameTypeId { get; set; }
+    [Column("arena_id")]
+    public int? ArenaId { get; set; }
 
     [Column("wager")]
     public int Wager { get; set; }

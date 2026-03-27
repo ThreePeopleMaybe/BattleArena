@@ -7,7 +7,7 @@ namespace BattleArena.Infrastructure.Repositories.Commands;
 
 public class ArenaCommandRepository(BattleArenaDbContext dbContext) : IArenaCommandRepository
 {
-    public async Task<Arena> CreateArenaAsync(string arenaName, string arenaCode, int arenaOwner, CancellationToken cancellationToken = default)
+    public async Task<Arena> CreateArenaAsync(string arenaName, string arenaCode, int arenaOwner, int wagerAmount, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
 
@@ -16,6 +16,7 @@ public class ArenaCommandRepository(BattleArenaDbContext dbContext) : IArenaComm
             ArenaName = arenaName,
             ArenaCode = arenaCode,
             ArenaOwner = arenaOwner,
+            WagerAmount = wagerAmount,
             Status = ArenaStatus.New,
             CreatedBy = "system",
             CreatedAt = now,
@@ -34,9 +35,26 @@ public class ArenaCommandRepository(BattleArenaDbContext dbContext) : IArenaComm
         return dbContext.Arenas.AnyAsync(a => a.ArenaCode == arenaCode, cancellationToken);
     }
 
-    public async Task<int> InsertArenaPlayerAsync(int arenaId, int userId, CancellationToken cancellationToken = default)
+    public async Task<int> InsertArenaPlayerAsync(int arenaId, long userId, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
+        var existing = await dbContext.ArenaPlayers
+            .FirstOrDefaultAsync(ap => ap.ArenaId == arenaId && ap.UserId == userId, cancellationToken);
+
+        if (existing != null)
+        {
+            if (existing.Status != ArenaPlayerStatus.Deleted)
+            {
+                return existing.Id;
+            }
+
+            existing.Status = ArenaPlayerStatus.New;
+            existing.UpdatedAt = now;
+            existing.UpdatedBy = "system";
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return existing.Id;
+        }
+
         var arenaPlayer = new ArenaPlayer
         {
             ArenaId = arenaId,
@@ -70,9 +88,9 @@ public class ArenaCommandRepository(BattleArenaDbContext dbContext) : IArenaComm
         return true;
     }
 
-    public async Task<bool> DeleteArenaPlayerAsync(int arenaPlayerId, CancellationToken cancellationToken = default)
+    public async Task<bool> LeaveArenaAsync(int arenaId, long userId, CancellationToken cancellationToken = default)
     {
-        var arenaPlayer = await dbContext.ArenaPlayers.FindAsync([arenaPlayerId], cancellationToken);
+        var arenaPlayer = await dbContext.ArenaPlayers.FirstOrDefaultAsync(ap => ap.ArenaId == arenaId && ap.UserId == userId, cancellationToken);
         if (arenaPlayer is null)
         {
             return false;
@@ -81,6 +99,22 @@ public class ArenaCommandRepository(BattleArenaDbContext dbContext) : IArenaComm
         arenaPlayer.Status = ArenaPlayerStatus.Deleted;
         arenaPlayer.UpdatedBy = "system";
         arenaPlayer.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> UpdateArenaWagerAsync(int arenaId, int wagerAmount, CancellationToken cancellationToken = default)
+    {
+        var arena = await dbContext.Arenas.FindAsync([arenaId], cancellationToken);
+        if (arena is null || arena.Status == ArenaStatus.Deleted)
+        {
+            return false;
+        }
+
+        arena.WagerAmount = Math.Max(0, wagerAmount);
+        arena.UpdatedBy = "system";
+        arena.UpdatedAt = DateTimeOffset.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return true;

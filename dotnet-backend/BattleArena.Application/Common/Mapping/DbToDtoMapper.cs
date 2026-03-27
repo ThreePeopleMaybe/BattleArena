@@ -14,14 +14,7 @@ public sealed class DbToDtoMapper : Profile
         CreateMap<Player, PlayerDto>();
         CreateMap<QuestionTopicCategory, QuestionTopicCategoryDto>();
         CreateMap<QuestionTopic, QuestionTopicDto>();
-
-        CreateMap<Question, QuestionDto>()
-            .ForMember(d => d.CorrectChoiceId, opt => opt.MapFrom(s =>
-                s.Choices == null || s.Choices.Count == 0
-                    ? 0
-                    : s.Choices.First(c => c.IsCorrectChoice).Id));
-
+        CreateMap<Question, QuestionDto>();
         CreateMap<QuestionChoice, QuestionChoiceDto>();
-        CreateMap<ActiveTriviaGameData, ActiveTriviaGameDto>();
     }
 }

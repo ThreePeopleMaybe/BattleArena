@@ -1,3 +1,4 @@
+using BattleArena.Application.Common;
 using BattleArena.Application.Common.Interfaces;
 using BattleArena.Db;
 using MediatR;
@@ -10,16 +11,39 @@ public sealed record InsertTriviaGameResultCommand(
     int TopicId,
     int NumberOfCorrectAnswers,
     int TimeTakenInSeconds,
-    IReadOnlyList<TriviaGameResultDetailDto> Details) : IRequest<long>;
+    IReadOnlyList<Dto.TriviaGameResultDetailDto> Details) : IRequest<long>;
 
 public sealed class InsertTriviaGameResultCommandHandler(
     ITriviaGameCommandRepository triviaGameCommandRepository,
-    ISender sender,
+    ITriviaGameQueryRepository triviaGameQueryRepository,
     BattleArenaDbContext dbContext)
     : IRequestHandler<InsertTriviaGameResultCommand, long>
 {
     public async Task<long> Handle(InsertTriviaGameResultCommand request, CancellationToken cancellationToken)
     {
+        var triviaGameResults = await triviaGameQueryRepository.GetTriviaGameResultAsync(request.GameId, cancellationToken);
+        var hasExistingResults = triviaGameResults.Count > 0;
+
+        bool? isWinner = null;
+        if (triviaGameResults.Count > 0)
+        {
+            var hasBetterExistingResult = triviaGameResults.Any(r =>
+                r.NumberOfCorrectAnswers > request.NumberOfCorrectAnswers ||
+                (r.NumberOfCorrectAnswers == request.NumberOfCorrectAnswers &&
+                 r.TimeTakenInSeconds < request.TimeTakenInSeconds));
+
+            if (!hasBetterExistingResult)
+            {
+                isWinner = true;
+                foreach (var triviaGameResult in triviaGameResults)
+                {
+                    triviaGameResult.IsWinner = false;
+                }
+                var shareWinner = triviaGameResults.FirstOrDefault(r => r.NumberOfCorrectAnswers == request.NumberOfCorrectAnswers && r.TimeTakenInSeconds == request.TimeTakenInSeconds);
+                shareWinner?.IsWinner = true;
+            }
+        }
+
         var strategy = dbContext.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(
@@ -28,27 +52,37 @@ public sealed class InsertTriviaGameResultCommandHandler(
             {
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
 
+                if (hasExistingResults)
+                {
+                    await triviaGameCommandRepository.UpdateTriviaGameResultWinnerAsync(triviaGameResults, ct);
+                }
+
                 var id = await triviaGameCommandRepository.InsertTriviaGameResultAsync(
                     request.GameId,
                     request.UserId,
                     request.TopicId,
                     request.NumberOfCorrectAnswers,
                     request.TimeTakenInSeconds,
-                    cancellationToken);
+                    isWinner,
+                    ct);
 
-                var details = request.Details.Select(d => new TriviaGameResultDetail
+                if (request.Details.Count > 0)
                 {
-                    QuestionId = d.QuestionId,
-                    ChoiceId = d.ChoiceId,
-                    GameId = request.GameId,
-                    UserId = request.UserId,
-                    UpdatedBy = "system",
-                    UpdatedAt = DateTime.UtcNow,
-                    CreatedBy = "system",
-                    CreatedAt = DateTime.UtcNow,
-                }).ToList();
+                    var now = DateTimeOffset.UtcNow;
+                    var details = request.Details.Select(d => new TriviaGameResultDetail
+                    {
+                        QuestionId = d.QuestionId,
+                        ChoiceId = d.ChoiceId,
+                        GameId = request.GameId,
+                        UserId = request.UserId,
+                        UpdatedBy = "system",
+                        UpdatedAt = now,
+                        CreatedBy = "system",
+                        CreatedAt = now,
+                    }).ToList();
 
-                await triviaGameCommandRepository.InsertTriviaGameResultDetailAsync(details, cancellationToken);
+                    await triviaGameCommandRepository.InsertTriviaGameResultDetailAsync(details, ct);
+                }
 
                 await transaction.CommitAsync(ct);
 
@@ -58,5 +92,3 @@ public sealed class InsertTriviaGameResultCommandHandler(
             cancellationToken: cancellationToken);
     }
 }
-
-public sealed record TriviaGameResultDetailDto(int QuestionId, int ChoiceId);

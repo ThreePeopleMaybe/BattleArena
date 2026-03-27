@@ -1,12 +1,9 @@
+import { QuestionTopic } from '../types';
 import { battleArenaClient } from './battleArenaClient';
 import { BATTLEARENA_API_URL } from './config';
 
-export interface QuestionTopicDto {
-  id: number;
-  name: string;
-}
 
-export async function getQuestionTopics(): Promise<QuestionTopicDto[]> {
+export async function getQuestionTopics(): Promise<QuestionTopic[]> {
   if (!BATTLEARENA_API_URL?.trim()) {
     throw new Error(
       'BattleArena API URL is empty. Set BATTLEARENA_API_URL in .env.local (KEY=value, no spaces) and restart Metro.'
@@ -25,5 +22,5 @@ export async function getQuestionTopics(): Promise<QuestionTopicDto[]> {
     );
   }
 
-  return data as QuestionTopicDto[];
+  return data;
 }

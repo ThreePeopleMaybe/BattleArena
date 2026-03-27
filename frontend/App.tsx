@@ -14,10 +14,9 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import SelectOpponentScreen from './src/screens/SelectOpponentScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import ArenaHomeScreen from './src/screens/trivia/ArenaHomeScreen';
+import ArenaLeaderboardScreen from './src/screens/trivia/ArenaLeaderboardScreen';
 import ArenaLobbyScreen from './src/screens/trivia/ArenaLobbyScreen';
-import ArenaResultScreen from './src/screens/trivia/ArenaResultScreen';
 import BattleResultScreen from './src/screens/trivia/BattleResultScreen';
-import BattleScreen from './src/screens/trivia/BattleScreen';
 import ChallengeScreen from './src/screens/trivia/ChallengeScreen';
 import JoinArenaScreen from './src/screens/trivia/JoinArenaScreen';
 import QuizScreen from './src/screens/trivia/QuizScreen';
@@ -71,12 +70,11 @@ export default function App() {
             <Stack.Screen
               name="SelectOpponent"
               component={SelectOpponentScreen}
-              options={(opts) => ({ title: 'Battle', ...homeButtonHeader(opts) })}
+              options={(opts) => ({ title: 'Battle' })}
             />
             <Stack.Screen name="MatchingOpponent" component={MatchingOpponentScreen} options={{ title: 'Finding opponent', ...noBackButton }} />
             <Stack.Screen name="Topics" component={TopicsScreen} options={{ title: 'Topics', ...noBackButton }} />
             <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz', ...noBackButton }} />
-            <Stack.Screen name="Battle" component={BattleScreen} options={{ title: 'Battle', ...noBackButton }} />
             <Stack.Screen name="BattleResult" component={BattleResultScreen} options={{ title: 'Results', ...noBackButton }} />
             <Stack.Screen
               name="Challenge"
@@ -88,10 +86,14 @@ export default function App() {
             <Stack.Screen
               name="ArenaLobby"
               component={ArenaLobbyScreen}
-              options={(opts) => ({ title: 'Arena' })}
+              options={() => ({ title: 'Arena' })}
             />
+            <Stack.Screen
+              name="ArenaLeaderboard"
+              component={ArenaLeaderboardScreen}
+              options={() => ({ title: 'Leaderboard'})}
+            />  
             <Stack.Screen name="WaitingForPlayers" component={WaitingForPlayersScreen} options={{ title: 'Results', ...noBackButton }} />
-            <Stack.Screen name="ArenaResult" component={ArenaResultScreen} options={{ title: 'Arena Results', ...noBackButton }} />
           </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>

@@ -1,5 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, type RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -13,10 +13,10 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
-import type { QuestionTopicDto } from '../../api/questionTopics';
-import { getActiveTriviaGame } from '../../api/triviaGame';
+import { getArenaById, leaveArena } from '../../api/arena';
+import { DEFAULT_TRIVIA_GAME_TYPE_ID, getActiveTriviaGame } from '../../api/triviaGame';
 import { useAuth } from '../../context/AuthContext';
 import { useQuestionTopics } from '../../hooks/useQuestionTopics';
 import { RootStackParamList } from '../../navigation/types';
@@ -26,8 +26,7 @@ import { getWalletBalance } from '../../storage/walletStorage';
 import { globalStyles } from '../../styles/globalStyles';
 import { triviaTopicStyles } from '../../styles/triviaTopicStyles';
 import { theme } from '../../theme';
-import { ActiveTriviaGame } from '../../types';
-import { topicAccentColorForId } from './shared/topicList';
+import { ActiveTriviaGame, Arena, QuestionTopic } from '../../types';
 
 const ALL_WAGERS = -1;
 const WAGER_OPTIONS: { value: number; label: string }[] = [
@@ -41,27 +40,33 @@ const WAGER_OPTIONS: { value: number; label: string }[] = [
 
 const ALL_TOPICS = 'all';
 
+const MAX_ACTIVE_ARENA_TRIVIA_GAMES_PER_USER = 3;
+
 interface TopicOption {
   id: string;
   name: string;
 }
 
-function entryMatchesTopic(entry: ActiveTriviaGame, topic: QuestionTopicDto): boolean {
+function entryMatchesTopic(entry: ActiveTriviaGame, topic: QuestionTopic): boolean {
   if (entry.topicId === topic.id) return true;
   const a = entry.topicName.trim().toLowerCase();
   const b = topic.name.trim().toLowerCase();
   return a.length > 0 && a === b;
 }
 
-function pickRandomTopic(topics: QuestionTopicDto[]): QuestionTopicDto {
+function pickRandomTopic(topics: QuestionTopic[]): QuestionTopic {
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Challenge'>;
+  route: RouteProp<RootStackParamList, 'Challenge'>;
 };
 
-export default function ChallengeScreen({ navigation }: Props) {
+export default function ChallengeScreen({ navigation, route }: Props) {
+  const arenaId = route.params?.arenaId ?? 0;
+  const showWagerControls = arenaId <= 0;
+
   const { isLoggedIn, user } = useAuth();
   const [activeTriviaGames, setActiveTriviaGames] = useState<ActiveTriviaGame[]>([]);
   const [activeTriviaGamesLoading, setActiveTriviaGamesLoading] = useState(false);
@@ -77,6 +82,29 @@ export default function ChallengeScreen({ navigation }: Props) {
   const [wagerLoaded, setWagerLoaded] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [wagerModalVisible, setWagerModalVisible] = useState(false);
+  const [arenaDetail, setArenaDetail] = useState<Arena | null>(null);
+  const [arenaDetailLoading, setArenaDetailLoading] = useState(() => arenaId > 0);
+  const [battleLimitModalVisible, setBattleLimitModalVisible] = useState(false);
+  const [leaveArenaModalVisible, setLeaveArenaModalVisible] = useState(false);
+  const [leaveArenaBusy, setLeaveArenaBusy] = useState(false);
+  const [leaveArenaError, setLeaveArenaError] = useState<string | null>(null);
+
+  const loadArenaDetail = useCallback(async () => {
+    if (arenaId <= 0) {
+      setArenaDetail(null);
+      setArenaDetailLoading(false);
+      return;
+    }
+    setArenaDetailLoading(true);
+    try {
+      const arena = await getArenaById(arenaId);
+      setArenaDetail(arena);
+    } catch {
+      setArenaDetail(null);
+    } finally {
+      setArenaDetailLoading(false);
+    }
+  }, [arenaId]);
 
   const loadActiveTriviaGames = useCallback(async () => {
     const userId = user?.userId;
@@ -88,8 +116,7 @@ export default function ChallengeScreen({ navigation }: Props) {
     setActiveTriviaGamesLoading(true);
     setActiveTriviaGamesError(null);
     try {
-      const rows = await getActiveTriviaGame(userId);
-      const displayName = user?.username?.trim() || 'You';
+      const rows = await getActiveTriviaGame(DEFAULT_TRIVIA_GAME_TYPE_ID, arenaId);
       setActiveTriviaGames(rows);
     } catch {
       setActiveTriviaGames([]);
@@ -125,7 +152,8 @@ export default function ChallengeScreen({ navigation }: Props) {
       loadActiveTriviaGames();
       loadTopics();
       getFavouriteTopicIds().then(setFavouriteTopicIds);
-    }, [loadActiveTriviaGames, loadTopics])
+      void loadArenaDetail();
+    }, [loadActiveTriviaGames, loadTopics, loadArenaDetail])
   );
 
   const handleToggleFavouriteTopic = useCallback(async (id: number) => {
@@ -135,9 +163,9 @@ export default function ChallengeScreen({ navigation }: Props) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadActiveTriviaGames(), loadTopics()]);
+    await Promise.all([loadActiveTriviaGames(), loadTopics(), loadArenaDetail()]);
     setRefreshing(false);
-  }, [loadActiveTriviaGames, loadTopics]);
+  }, [loadActiveTriviaGames, loadTopics, loadArenaDetail]);
 
   const filteredActiveTriviaGames = useMemo(() => {
     let result = activeTriviaGames;
@@ -150,11 +178,11 @@ export default function ChallengeScreen({ navigation }: Props) {
         result = result.filter((e) => entryMatchesTopic(e, topic));
       }
     }
-    if (wagerAmount !== ALL_WAGERS) {
+    if (showWagerControls && wagerAmount !== ALL_WAGERS) {
       result = result.filter((e) => (e.wagerAmount ?? 0) === wagerAmount);
     }
     return result;
-  }, [activeTriviaGames, selectedTopicId, wagerAmount, isLoggedIn, apiTopics]);
+  }, [activeTriviaGames, selectedTopicId, wagerAmount, isLoggedIn, apiTopics, showWagerControls]);
 
   const topicOptions: TopicOption[] = useMemo(() => {
     const all: TopicOption = { id: ALL_TOPICS, name: 'Any topics' };
@@ -179,11 +207,36 @@ export default function ChallengeScreen({ navigation }: Props) {
     [apiTopics, favouriteTopicIds]
   );
 
+  const isArenaHost = useMemo(() => {
+    const uid = user?.userId;
+    if (uid == null || !arenaDetail) return false;
+    return Number(arenaDetail.arenaOwner) === Number(uid);
+  }, [user?.userId, arenaDetail]);
+
+  const isArenaMemberNotHost = useMemo(() => {
+    const uid = user?.userId;
+    if (uid == null || !arenaDetail || isArenaHost) return false;
+    return arenaDetail.members.some((m) => Number(m.userId) === Number(uid));
+  }, [user?.userId, arenaDetail, isArenaHost]);
+
+  const tournamentPrizePool = useMemo(() => {
+    if (arenaId <= 0 || !arenaDetail) return null;
+    const uniqueMemberIds = new Set<number>();
+    for (const m of arenaDetail.members) {
+      uniqueMemberIds.add(Number(m.userId));
+    }
+    uniqueMemberIds.add(Number(arenaDetail.arenaOwner));
+    const memberCount = uniqueMemberIds.size;
+    const wager = arenaDetail.wagerAmount ?? 0;
+    return memberCount * wager;
+  }, [arenaId, arenaDetail]);
+
   const effectiveWager = useMemo(() => {
+    if (!showWagerControls) return 0;
     if (!isLoggedIn || wagerAmount <= 0 || wagerAmount === ALL_WAGERS) return 0;
     if (walletBalance !== null && walletBalance < wagerAmount) return 0;
     return wagerAmount;
-  }, [isLoggedIn, wagerAmount, walletBalance]);
+  }, [showWagerControls, isLoggedIn, wagerAmount, walletBalance]);
 
   const handleWagerSelect = (amount: number) => {
     if (!isLoggedIn) return;
@@ -207,9 +260,10 @@ export default function ChallengeScreen({ navigation }: Props) {
         wagerAmount: wager,
         fromChallenge: true,
         gameId: entry.gameId,
+        arenaId: arenaId,
       });
     },
-    [isLoggedIn, effectiveWager, navigation]
+    [isLoggedIn, effectiveWager, navigation, arenaId]
   );
 
   const canStartNewBattle = useMemo(() => {
@@ -220,8 +274,27 @@ export default function ChallengeScreen({ navigation }: Props) {
     return apiTopics.length > 0;
   }, [selectedTopicId, apiTopics, topicsLoading]);
 
+  const myActiveArenaTriviaGameCount = useMemo(() => {
+    if (arenaId <= 0) return 0;
+    const uid = user?.userId;
+    if (uid == null) return 0;
+    const ids = new Set<number>();
+    for (const entry of activeTriviaGames) {
+      if (entry.userId === uid) ids.add(entry.gameId);
+    }
+    return ids.size;
+  }, [arenaId, user?.userId, activeTriviaGames]);
+
   const handleStartNewBattle = useCallback(() => {
     if (!canStartNewBattle) return;
+    if (
+      arenaId > 0 &&
+      user?.userId != null &&
+      myActiveArenaTriviaGameCount >= MAX_ACTIVE_ARENA_TRIVIA_GAMES_PER_USER
+    ) {
+      setBattleLimitModalVisible(true);
+      return;
+    }
     let topicId: number;
     let opponentTopicId: number;
 
@@ -240,313 +313,481 @@ export default function ChallengeScreen({ navigation }: Props) {
       opponentTopicId,
       wagerAmount: wager,
       fromChallenge: true,
+      arenaId: arenaId,
     });
-  }, [canStartNewBattle, selectedTopicId, apiTopics, isLoggedIn, effectiveWager, navigation]);
+  }, [
+    arenaId,
+    canStartNewBattle,
+    effectiveWager,
+    isLoggedIn,
+    myActiveArenaTriviaGameCount,
+    navigation,
+    selectedTopicId,
+    apiTopics,
+    user?.userId,
+  ]);
 
   const openWagerModal = useCallback(() => {
+    if (!showWagerControls) return;
     if (!isLoggedIn) {
       navigation.navigate('Login');
       return;
     }
     getWalletBalance().then(setWalletBalance);
     setWagerModalVisible(true);
-  }, [isLoggedIn, navigation]);
+  }, [showWagerControls, isLoggedIn, navigation]);
+
+  const openLeaveArenaModal = useCallback(() => {
+    setLeaveArenaError(null);
+    setLeaveArenaModalVisible(true);
+  }, []);
+
+  const closeLeaveArenaModal = useCallback(() => {
+    if (leaveArenaBusy) return;
+    setLeaveArenaModalVisible(false);
+    setLeaveArenaError(null);
+  }, [leaveArenaBusy]);
+
+  const confirmLeaveArena = useCallback(async () => {
+    const uid = user?.userId;
+    if (uid == null || arenaId <= 0) return;
+    setLeaveArenaBusy(true);
+    setLeaveArenaError(null);
+    try {
+      await leaveArena(arenaId, uid);
+      setLeaveArenaModalVisible(false);
+      navigation.replace('ArenaHome');
+    } catch (e) {
+      setLeaveArenaError(e instanceof Error ? e.message : 'Request failed.');
+    } finally {
+      setLeaveArenaBusy(false);
+    }
+  }, [user?.userId, arenaId, navigation]);
 
   return (
-    <ScrollView
-      style={globalStyles.screenContainer}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={theme.colors.primary}
-        />
-      }
-    >
+  <ScrollView
+    style={globalStyles.screenContainer}
+    contentContainerStyle={styles.content}
+    refreshControl={
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        tintColor={theme.colors.primary}
+      />
+    }
+  >
+    {arenaId > 0 ? (
       <View style={styles.wagerDisplayRow}>
-        <View style={styles.wagerSpacer} />
-        <View style={styles.wagerCenterSection}>
-          <Text style={styles.wagerLabel}>
-            {!isLoggedIn ? '' : 'Wager'}
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.wagerChip,
-              styles.wagerChipDisplay,
-              isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipSelected,
-              !isLoggedIn && styles.wagerChipDisabled,
-            ]}
-            onPress={openWagerModal}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.wagerChipText,
-                isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipTextSelected,
-                !isLoggedIn && styles.wagerChipTextDisabled,
-              ]}
+        <View style={styles.arenaHeaderLeft}>
+          {isLoggedIn &&
+          user?.userId != null &&
+          arenaDetail &&
+          !arenaDetailLoading &&
+          isArenaMemberNotHost ? (
+            <TouchableOpacity
+              style={styles.arenaLeaveButtonHeader}
+              onPress={openLeaveArenaModal}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Leave this tournament"
             >
-              {!isLoggedIn ? 'Log in to wager' : wagerLoaded ? wagerDisplayLabel : '...'}
-            </Text>
-          </TouchableOpacity>
+              <Ionicons name="exit-outline" size={16} color={theme.colors.textMuted} />
+              <Text style={styles.arenaLeaveButtonHeaderText} numberOfLines={2}>
+                Leave
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
-        <View style={styles.wagerSpacer}>
-          {isLoggedIn && (
+        <View style={styles.arenaHeaderCenter}>
+          {arenaDetailLoading ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : (
+            <Text style={styles.arenaNameTitle} numberOfLines={2}>
+              {arenaDetail?.arenaName?.trim()}
+            </Text>
+          )}
+        </View>
+
+        <View style={[styles.arenaHeaderRight, styles.wagerSpacerTrailingRow]}>
+          <TouchableOpacity
+            style={[styles.arenaLeaderboardIconChip, styles.arenaLeaderboardIconOnly]}
+            onPress={() => navigation.navigate('ArenaLeaderboard', { arenaId })}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Arena leaderboard"
+          >
+            <Ionicons name="trophy-outline" size={22} color={theme.colors.primary} />
+          </TouchableOpacity>
+          {isLoggedIn ? (
+            <View style={[styles.balanceChip, styles.balanceChipArenaPair]}>
+              <Text style={styles.balanceLabel}>Prize pool</Text>
+              <Text style={styles.balanceAmount}>
+                {walletBalance !== null ? `$${tournamentPrizePool?.toFixed(2) ?? '0.00'}` : '...'}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    ) : (
+      <View style={styles.wagerDisplayRow}>
+        <View style={styles.wagerSpacer} />
+        {showWagerControls ? (
+          <View style={styles.wagerCenterSection}>
+            <Text style={styles.wagerLabel}>
+              {!isLoggedIn ? '' : 'Wager'}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.wagerChip,
+                styles.wagerChipDisplay,
+                isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipSelected,
+                !isLoggedIn && styles.wagerChipDisabled,
+              ]}
+              onPress={openWagerModal}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.wagerChipText,
+                  isLoggedIn && (wagerAmount === ALL_WAGERS || wagerAmount > 0) && styles.wagerChipTextSelected,
+                  !isLoggedIn && styles.wagerChipTextDisabled,
+                ]}
+              >
+                {!isLoggedIn ? 'Log in to wager' : wagerLoaded ? wagerDisplayLabel : '...'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        <View
+          style={[
+            styles.wagerSpacer,
+            isLoggedIn && styles.wagerSpacerTrailingRow,
+          ]}
+        >
+          {isLoggedIn ? (
             <View style={styles.balanceChip}>
               <Text style={styles.balanceLabel}>Balance</Text>
               <Text style={styles.balanceAmount}>
                 {walletBalance !== null ? `$${walletBalance.toFixed(2)}` : '...'}
               </Text>
             </View>
-          )}
-        </View>
-      </View>
-
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={() => setTopicFilterModalVisible(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="filter" size={20} color={theme.colors.primary} />
-        <Text style={styles.filterButtonText}>
-          {topicsLoading ? 'Loading topics...' : selectedTopicLabel}
-        </Text>
-        {topicsLoading ? (
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-        ) : (
-          <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
-        )}
-      </TouchableOpacity>
-
-      <Modal
-        visible={topicFilterModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setTopicFilterModalVisible(false)}
-      >
-        <Pressable style={globalStyles.modalOverlay} onPress={() => setTopicFilterModalVisible(false)}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.modalTitle}>Filter by topic</Text>
-            
-            <View style={triviaTopicStyles.favToggleRow}>
-              <Text style={triviaTopicStyles.favToggleHint}>Favourites</Text>
-              <TouchableOpacity
-                style={[
-                  triviaTopicStyles.favFilterChip,
-                  showFavouritesOnly && triviaTopicStyles.favFilterChipSelected,
-                ]}
-                onPress={() => setShowFavouritesOnly((prev) => !prev)}
-                activeOpacity={0.8}
-                accessibilityLabel={showFavouritesOnly ? 'Show all topics' : 'Show favourite topics only'}
-              >
-                <View>
-                  <Ionicons
-                    name="star"
-                    size={22}
-                    color={showFavouritesOnly ? theme.colors.primary : theme.colors.textMuted}
-                  />
-                  {favouriteTopicCount > 0 && (
-                    <View style={triviaTopicStyles.favCountBadge}>
-                      <Text style={triviaTopicStyles.favCountText}>{favouriteTopicCount}</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            <TextInput
-              style={triviaTopicStyles.topicSearchInput}
-              placeholder="Search topics..."
-              placeholderTextColor={theme.colors.textMuted}
-              value={topicSearch}
-              onChangeText={setTopicSearch}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <FlatList
-              data={topicOptions}
-              keyExtractor={(item) => item.id}
-              style={styles.topicList}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={
-                <Text style={triviaTopicStyles.topicListEmpty}>
-                  {showFavouritesOnly && favouriteTopicCount === 0
-                    ? 'No favourites yet. Tap the star next to a topic to add it.'
-                    : 'No topics match your search.'}
-                </Text>
-              }
-              renderItem={({ item }) => {
-                const isFav = item.id !== ALL_TOPICS && favouriteTopicIds.includes(Number(item.id));
-                return (
-                  <View style={[
-                    styles.topicOptionRow,
-                    selectedTopicId === item.id && triviaTopicStyles.topicRowSelected,
-                  ]}>
-                    <TouchableOpacity
-                      style={styles.topicOptionMain}
-                      onPress={() => {
-                        setSelectedTopicId(item.id);
-                        setTopicFilterModalVisible(false);
-                        setTopicSearch('');
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[
-                        styles.topicOptionText,
-                        selectedTopicId === item.id && styles.topicOptionTextSelected,
-                      ]}>
-                        {item.name}
-                      </Text>
-                      {selectedTopicId === item.id && (
-                        <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                      )}
-                    </TouchableOpacity>
-
-                    {item.id !== ALL_TOPICS && (
-                      <TouchableOpacity
-                        style={triviaTopicStyles.topicFavButton}
-                        onPress={() => handleToggleFavouriteTopic(Number(item.id))}
-                        activeOpacity={0.8}
-                        accessibilityLabel={isFav ? 'Remove from favourites' : 'Add to favourites'}
-                      >
-                        <Ionicons
-                          name={isFav ? 'star' : 'star-outline'}
-                          size={22}
-                          color={isFav ? theme.colors.primary : theme.colors.textMuted}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              }}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <Modal
-        visible={wagerModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setWagerModalVisible(false)}
-      >
-        <Pressable style={globalStyles.modalOverlay} onPress={() => setWagerModalVisible(false)}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-            <Text style={globalStyles.modalTitle}>Select wager amount</Text>
-            <View style={styles.modalChips}>
-              {WAGER_OPTIONS.map((opt) => {
-                const exceedsBalance = opt.value > 0 && walletBalance !== null && opt.value > walletBalance;
-                return (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[
-                      styles.wagerChip,
-                      wagerAmount === opt.value && styles.wagerChipSelected,
-                      exceedsBalance && styles.wagerChipDisabled,
-                    ]}
-                    onPress={() => !exceedsBalance && handleWagerSelect(opt.value)}
-                    activeOpacity={0.8}
-                    disabled={exceedsBalance}
-                  >
-                    <Text
-                      style={[
-                        styles.wagerChipText,
-                        wagerAmount === opt.value && styles.wagerChipTextSelected,
-                        exceedsBalance && styles.wagerChipTextDisabled,
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            <TouchableOpacity
-              style={globalStyles.primaryButton}
-              onPress={() => setWagerModalVisible(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.primaryButtonText}>Done</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <View style={styles.newBattleRow}>
-        <TouchableOpacity
-          style={[styles.newBattleButton, !canStartNewBattle && styles.newBattleButtonDisabled]}
-          onPress={handleStartNewBattle}
-          disabled={!canStartNewBattle}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.newBattleButtonText}>Start a new battle</Text>
-        </TouchableOpacity>
-      </View>
-
-      {filteredActiveTriviaGames.length === 0 ? (
-        <View style={styles.emptyStateContainer}>
-          {activeTriviaGamesError ? (
-            <Text style={[globalStyles.emptyState, styles.historyErrorText]}>
-              {activeTriviaGamesError}
-            </Text>
-          ) : null}
-          {!activeTriviaGamesError && activeTriviaGamesLoading ? (
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          ) : null}
-          {!activeTriviaGamesError && !activeTriviaGamesLoading ? (
-            <Text style={globalStyles.emptyState}>
-              {!isLoggedIn
-                ? 'Log in to see quiz history from your account.'
-                : activeTriviaGames.length === 0
-                ? "No quiz results yet. Finish a quiz while logged in to see it here."
-                : 'No quizzes match the selected filters. Try different topic or wager.'}
-            </Text>
-          ) : null}
-          {activeTriviaGamesError ? (
-            <TouchableOpacity
-              style={globalStyles.secondaryButton}
-              onPress={() => void loadActiveTriviaGames()}
-              activeOpacity={0.8}
-            >
-              <Text style={globalStyles.secondaryButtonText}>Retry</Text>
-            </TouchableOpacity>
           ) : null}
         </View>
+      </View>
+    )}
+
+    <TouchableOpacity
+      style={styles.filterButton}
+      onPress={() => setTopicFilterModalVisible(true)}
+      activeOpacity={0.8}
+    >
+      <Ionicons name="filter" size={20} color={theme.colors.primary} />
+      <Text style={styles.filterButtonText}>
+        {topicsLoading ? 'Loading topics...' : selectedTopicLabel}
+      </Text>
+      {topicsLoading ? (
+        <ActivityIndicator size="small" color={theme.colors.primary} />
       ) : (
-        filteredActiveTriviaGames.map((entry) => (
-          <View
-            key={entry.gameId}
-            style={[styles.entry, { borderLeftColor: topicAccentColorForId(entry.topicName) }]}
-          >
-            <View style={styles.entryContent}>
-              <Text style={styles.playerText} numberOfLines={1}>
-                {entry.userName ?? 'Unknown'}
-              </Text>
-              <Text style={styles.topicName} numberOfLines={1}>
-                {entry.topicName}
-              </Text>
-              <Text style={styles.wagerText} numberOfLines={1}>
-                {entry.wagerAmount != null && entry.wagerAmount > 0
-                  ? `$${entry.wagerAmount}`
-                  : isLoggedIn ? 'No wager' : ''}
-              </Text>
-            </View>
+        <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
+      )}
+    </TouchableOpacity>
+
+    <Modal
+      visible={topicFilterModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setTopicFilterModalVisible(false)}
+    >
+      <Pressable style={globalStyles.modalOverlay} onPress={() => setTopicFilterModalVisible(false)}>
+        <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <Text style={styles.modalTitle}>Filter by topic</Text>
+
+          <View style={triviaTopicStyles.favToggleRow}>
+            <Text style={triviaTopicStyles.favToggleHint}>Favourites</Text>
             <TouchableOpacity
-              style={styles.challengeButton}
-              onPress={() => handleChallenge(entry)}
+              style={[
+                triviaTopicStyles.favFilterChip,
+                showFavouritesOnly && triviaTopicStyles.favFilterChipSelected,
+              ]}
+              onPress={() => setShowFavouritesOnly((prev) => !prev)}
               activeOpacity={0.8}
+              accessibilityLabel={showFavouritesOnly ? 'Show all topics' : 'Show favourite topics only'}
             >
-              <MaterialCommunityIcons name="sword-cross" size={24} color={theme.colors.text} />
+              <View>
+                <Ionicons
+                  name="star"
+                  size={22}
+                  color={showFavouritesOnly ? theme.colors.primary : theme.colors.textMuted}
+                />
+                {favouriteTopicCount > 0 && (
+                  <View style={triviaTopicStyles.favCountBadge}>
+                    <Text style={triviaTopicStyles.favCountText}>{favouriteTopicCount}</Text>
+                  </View>
+                )}
+              </View>
             </TouchableOpacity>
           </View>
-        ))
-      )}
-    </ScrollView>
-  );
+
+          <TextInput
+            style={triviaTopicStyles.topicSearchInput}
+            placeholder="Search topics..."
+            placeholderTextColor={theme.colors.textMuted}
+            value={topicSearch}
+            onChangeText={setTopicSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <FlatList
+            data={topicOptions}
+            keyExtractor={(item) => item.id}
+            style={styles.topicList}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              <Text style={triviaTopicStyles.topicListEmpty}>
+                {showFavouritesOnly && favouriteTopicCount === 0
+                  ? 'No favourites yet. Tap the star next to a topic to add it.'
+                  : 'No topics match your search.'}
+              </Text>
+            }
+            renderItem={({ item }) => {
+              const isFav = item.id !== ALL_TOPICS && favouriteTopicIds.includes(Number(item.id));
+              return (
+                <View style={[
+                  styles.topicOptionRow,
+                  selectedTopicId === item.id && triviaTopicStyles.topicRowSelected,
+                ]}>
+                  <TouchableOpacity
+                    style={styles.topicOptionMain}
+                    onPress={() => {
+                      setSelectedTopicId(item.id);
+                      setTopicFilterModalVisible(false);
+                      setTopicSearch('');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[
+                      styles.topicOptionText,
+                      selectedTopicId === item.id && styles.topicOptionTextSelected,
+                    ]}>
+                      {item.name}
+                    </Text>
+                    {selectedTopicId === item.id && (
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    )}
+                  </TouchableOpacity>
+
+                  {item.id !== ALL_TOPICS && (
+                    <TouchableOpacity
+                      style={triviaTopicStyles.topicFavButton}
+                      onPress={() => handleToggleFavouriteTopic(Number(item.id))}
+                      activeOpacity={0.8}
+                      accessibilityLabel={isFav ? 'Remove from favourites' : 'Add to favourites'}
+                    >
+                      <Ionicons
+                        name={isFav ? 'star' : 'star-outline'}
+                        size={22}
+                        color={isFav ? theme.colors.primary : theme.colors.textMuted}
+                     />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            }}
+          />
+        </Pressable>
+      </Pressable>
+    </Modal>
+
+    {/* Wager Selection Modal */}
+    <Modal
+      visible={showWagerControls && wagerModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setWagerModalVisible(false)}
+    >
+      <Pressable style={globalStyles.modalOverlay} onPress={() => setWagerModalVisible(false)}>
+        <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <Text style={globalStyles.modalTitle}>Select wager amount</Text>
+          <View style={styles.modalChips}>
+            {WAGER_OPTIONS.map((opt) => {
+              const exceedsBalance = opt.value > 0 && walletBalance !== null && opt.value > walletBalance;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[
+                    styles.wagerChip,
+                    wagerAmount === opt.value && styles.wagerChipSelected,
+                    exceedsBalance && styles.wagerChipDisabled,
+                  ]}
+                  onPress={() => !exceedsBalance && handleWagerSelect(opt.value)}
+                  activeOpacity={0.8}
+                  disabled={exceedsBalance}
+                >
+                  <Text
+                    style={[
+                      styles.wagerChipText,
+                      wagerAmount === opt.value && styles.wagerChipTextSelected,
+                      exceedsBalance && styles.wagerChipTextDisabled,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            onPress={() => setWagerModalVisible(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={globalStyles.primaryButtonText}>Done</Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+
+    <Modal
+      visible={battleLimitModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setBattleLimitModalVisible(false)}
+    >
+      <Pressable style={globalStyles.modalOverlay} onPress={() => setBattleLimitModalVisible(false)}>
+        <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <Text style={globalStyles.modalTitle}>Battle limit</Text>
+          <Text style={styles.battleLimitModalBody}>
+            You already have {MAX_ACTIVE_ARENA_TRIVIA_GAMES_PER_USER} active trivia games in this tournament.
+            Please pick a game from the list below.
+          </Text>
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            onPress={() => setBattleLimitModalVisible(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={globalStyles.primaryButtonText}>OK</Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+
+    <Modal
+      visible={leaveArenaModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={closeLeaveArenaModal}
+    >
+      <Pressable style={globalStyles.modalOverlay} onPress={closeLeaveArenaModal}>
+        <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <Text style={globalStyles.modalTitle}>Leave tournament?</Text>
+          <Text style={styles.battleLimitModalBody}>
+            You will leave this tournament and lose access until you join again with a code.
+          </Text>
+          {leaveArenaError ? (
+            <Text style={styles.leaveArenaModalError}>{leaveArenaError}</Text>
+          ) : null}
+          <View style={styles.leaveArenaModalActions}>
+            <TouchableOpacity
+              style={globalStyles.secondaryButton}
+              onPress={closeLeaveArenaModal}
+              activeOpacity={0.8}
+              disabled={leaveArenaBusy}
+            >
+              <Text style={globalStyles.secondaryButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={globalStyles.primaryButton}
+              onPress={() => void confirmLeaveArena()}
+              activeOpacity={0.8}
+              disabled={leaveArenaBusy}
+            >
+              {leaveArenaBusy ? (
+                <ActivityIndicator color={theme.colors.text} />
+              ) : (
+                <Text style={globalStyles.primaryButtonText}>Leave</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+
+    {/* New Battle Button */}
+    <View style={styles.newBattleRow}>
+      <TouchableOpacity
+        style={[styles.newBattleButton, !canStartNewBattle && styles.newBattleButtonDisabled]}
+        onPress={handleStartNewBattle}
+        disabled={!canStartNewBattle}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.newBattleButtonText}>Start a new battle</Text>
+      </TouchableOpacity>
+    </View>
+
+    {/* Active Games List / Empty States */}
+    {filteredActiveTriviaGames.length === 0 ? (
+      <View style={styles.emptyStateContainer}>
+        {activeTriviaGamesError ? (
+          <Text style={[globalStyles.emptyState, styles.historyErrorText]}>
+            {activeTriviaGamesError}
+          </Text>
+        ) : null}
+        {!activeTriviaGamesError && activeTriviaGamesLoading ? (
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        ) : null}
+        {!activeTriviaGamesError && !activeTriviaGamesLoading ? (
+          <Text style={globalStyles.emptyState}>
+            {!isLoggedIn
+              ? 'Log in to see quiz history from your account.'
+              : activeTriviaGames.length === 0
+              ? 'No quiz results yet. Finish a quiz while logged in to see it here.'
+              : 'No quizzes match the selected filters. Try different topic or wager.'}
+          </Text>
+        ) : null}
+        {activeTriviaGamesError ? (
+          <TouchableOpacity
+            style={globalStyles.secondaryButton}
+            onPress={() => void loadActiveTriviaGames()}
+            activeOpacity={0.8}
+          >
+            <Text style={globalStyles.secondaryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    ) : (
+      filteredActiveTriviaGames.map((entry) => (
+        <View key={entry.gameId} style={[styles.entry]}>
+          <View style={styles.entryContent}>
+            <Text style={styles.playerText} numberOfLines={1}>
+              {entry.userName ?? 'Unknown'}
+            </Text>
+            <Text style={styles.topicName} numberOfLines={1}>
+              {entry.topicName}
+            </Text>
+            <Text style={styles.wagerText} numberOfLines={1}>
+              {entry.wagerAmount != null && entry.wagerAmount > 0
+                ? `$${entry.wagerAmount}`
+                : isLoggedIn ? 'No wager' : ''}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.challengeButton}
+            onPress={() => handleChallenge(entry)}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons name="sword-cross" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+        </View>
+      ))
+    )}
+  </ScrollView>
+);
 }
+
+const ARENA_TRAILING_CHIP_HEIGHT = 56;
 
 const styles = StyleSheet.create({
   newBattleRow: {
@@ -595,6 +836,71 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingTop: 0,
     paddingBottom: theme.spacing.xl,
+  },
+  wagerSpacerTrailingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  arenaLeaderboardIconChip: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.sm,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  },
+  arenaLeaderboardIconOnly: {
+    width: ARENA_TRAILING_CHIP_HEIGHT,
+    height: ARENA_TRAILING_CHIP_HEIGHT,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arenaHeaderLeft: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    minHeight: ARENA_TRAILING_CHIP_HEIGHT,
+    paddingRight: theme.spacing.xs,
+  },
+  arenaHeaderCenter: {
+    flex: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: theme.spacing.xl + theme.fontSize.xl,
+    paddingHorizontal: theme.spacing.xs,
+  },
+  arenaHeaderRight: {
+    flex: 1,
+    minHeight: ARENA_TRAILING_CHIP_HEIGHT,
+    justifyContent: 'center',
+  },
+  arenaLeaveButtonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '100%',
+    paddingVertical: 6,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.surfaceLight,
+    backgroundColor: theme.colors.surface,
+  },
+  arenaLeaveButtonHeaderText: {
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.textMuted,
+    lineHeight: 14,
+  },
+  arenaNameTitle: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: '700',
+    color: theme.colors.text,
+    textAlign: 'center',
   },
   entry: {
     flexDirection: 'row',
@@ -649,7 +955,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.surfaceLight,
   },
-  filterButtonText: {
+filterButtonText: {
     flex: 1,
     fontSize: theme.fontSize.md,
     fontWeight: '600',
@@ -672,6 +978,23 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.surfaceLight,
   },
+  battleLimitModalBody: {
+    fontSize: theme.fontSize.md,
+    color: theme.colors.text,
+    lineHeight: 22,
+    marginBottom: theme.spacing.lg,
+  },
+  leaveArenaModalError: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.error,
+    marginBottom: theme.spacing.md,
+  },
+  leaveArenaModalActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+  },
   modalTitle: {
     fontSize: theme.fontSize.lg,
     fontWeight: '700',
@@ -687,7 +1010,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.surfaceLight,
     fontSize: theme.fontSize.md,
-    color: theme.colors.text,
   },
   topicList: {
     maxHeight: 300,
@@ -768,6 +1090,10 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     borderWidth: 2,
     borderColor: theme.colors.success,
+  },
+  balanceChipArenaPair: {
+    height: ARENA_TRAILING_CHIP_HEIGHT,
+    justifyContent: 'center',
   },
   balanceLabel: {
     fontSize: 11,
