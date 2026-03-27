@@ -3,20 +3,20 @@ import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { QuestionTopic } from '../../../src/types';
 import { useQuestionTopics } from '../../hooks/useQuestionTopics';
 import { RootStackParamList } from '../../navigation/types';
 import { getFavouriteTopicIds, toggleFavouriteTopic } from '../../storage/favouritesStorage';
 import { globalStyles } from '../../styles/globalStyles';
 import { triviaTopicStyles } from '../../styles/triviaTopicStyles';
 import { theme } from '../../theme';
-import { topicListItemFromTopic, type TopicListItem } from './shared/topicList';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Topics'>;
   route: RouteProp<RootStackParamList, 'Topics'>;
 };
 
-function pickRandomTopic(list: TopicListItem[]): TopicListItem {
+function pickRandomTopic(list: QuestionTopic[]): QuestionTopic {
   return list[Math.floor(Math.random() * list.length)];
 }
 
@@ -35,10 +35,9 @@ export default function TopicsScreen({ navigation, route }: Props) {
   const [showFavouritesOnly, setShowFavouritesOnly] = useState(false);
   const [autoSelectSecondsLeft, setAutoSelectSecondsLeft] = useState(30);
 
-  const { topics: topicRows, loading: topicsLoading, loadFailed: topicsLoadFailed, reload: loadTopics } =
+  const { topics: topics, loading: topicsLoading, loadFailed: topicsLoadFailed, reload: loadTopics } =
     useQuestionTopics();
 
-  const topics = useMemo(() => topicRows.map(topicListItemFromTopic), [topicRows]);
 
   useFocusEffect(
     useCallback(() => {
@@ -80,7 +79,7 @@ export default function TopicsScreen({ navigation, route }: Props) {
     }
 
     if (fromArena) {
-      navigation.navigate('Battle', {
+      navigation.navigate('Quiz', {
         topicId: topicId,
         opponentTopicId: topicId,
         opponentName: 'Arena',
@@ -91,7 +90,7 @@ export default function TopicsScreen({ navigation, route }: Props) {
     }
 
     if (pickingOpponentTopic) {
-      navigation.navigate('Battle', {
+      navigation.navigate('Quiz', {
         topicId: topicId,
         opponentTopicId: topicId,
         opponentName: opponentName ?? 'Opponent',
@@ -99,7 +98,7 @@ export default function TopicsScreen({ navigation, route }: Props) {
         fromChallenge
       });
     } else {
-      navigation.navigate('Battle', {
+      navigation.navigate('Quiz', {
         topicId: topicId,
         opponentTopicId: topicId,
         opponentName: opponentName ?? 'Opponent',

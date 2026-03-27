@@ -50,7 +50,7 @@ export default function HomeScreen({ navigation }: Props) {
 
       <TouchableOpacity
         style={[styles.card, styles.battleCard]}
-        onPress={() => navigation.navigate('SelectOpponent', { fromChallenge: false })}
+        onPress={() => navigation.navigate('SelectOpponent')}
         activeOpacity={0.8}
       >
         <Text style={styles.cardIcon}>⚔️</Text>
@@ -64,8 +64,8 @@ export default function HomeScreen({ navigation }: Props) {
         activeOpacity={0.8}
       >
         <Text style={styles.cardIcon}>🏟️</Text>
-        <Text style={styles.cardTitle}>Arena</Text>
-        <Text style={styles.cardDesc}>Create or join arenas. View your arenas and host multiplayer sessions.</Text>
+        <Text style={styles.cardTitle}>Tournament</Text>
+        <Text style={styles.cardDesc}>Create or join tournaments. View your tournaments and host multiplayer sessions.</Text>
       </TouchableOpacity>
     </View>
   );

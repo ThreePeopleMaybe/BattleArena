@@ -19,18 +19,27 @@ public class Dto
         public string Text { get; set; } = string.Empty;
         public bool IsCorrectChoice { get; set; }
     }
+    public sealed record ArenaDto(
+        int Id,
+        string ArenaName,
+        string ArenaCode,
+        int ArenaOwner,
+        ArenaStatus Status,
+        int WagerAmount,
+        IReadOnlyList<ArenaPlayerDto>? Members = null);
 
-    public sealed record ArenaDto(int Id, string ArenaName, string ArenaCode, int ArenaOwner, ArenaStatus Status);
+    public sealed record ArenaPlayerDto(long UserId, string UserName);
 
-    public record QuestionTopicCategoryDto(int Id, string Name, string? Description);
+    public sealed record QuestionTopicCategoryDto(int Id, string Name, string? Description);
 
-    public record QuestionTopicDto(int Id, string Name, int QuestionTopicCategoryId, string? Description);
+    public sealed record QuestionTopicDto(int Id, string Name, int QuestionTopicCategoryId, string? Description);
 
-    public sealed record ActiveTriviaGameData(long GameId, long UserId, string UserName, int WagerAmount, int TopicId, string TopicName);
+    public sealed record ActiveTriviaGameData(long GameId, long UserId, string UserName, int WagerAmount, int TopicId, string TopicName, int ArenaId);
 
-    public sealed record TriviaGameWinnerData(long GameId, long UserId, string UserName, int NumberOfCorrectAnswers, int TimeTakenInSeconds);
+    public sealed record ArenaLeaderboardEntryDto(string UserName, int Wins, int Losses, int GamesPlayed, int TotalCorrectAnswers, int TotalTimeTakenInSeconds);
 
-    public record UserDto(long Id, string Username, string FirstName, string LastName, string? Email, string? PhoneNumber, int wins, int losses, int amount);
+    public sealed record UserDto(long Id, string Username, string FirstName, string LastName, string? Email, string? PhoneNumber, int wins, int losses, int amount);
 
-    public record PlayerDto(long Id, string Username, int Wins, int Losses, int WagerAmount);
+    public sealed record PlayerDto(long Id, string Username, int Wins, int Losses, int WagerAmount);
+    public sealed record TriviaGameResultDetailDto(int QuestionId, int ChoiceId);
 }

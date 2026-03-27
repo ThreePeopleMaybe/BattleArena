@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { battleArenaClient } from './battleArenaClient';
+import { BattleArenaApiError, messageFromResponseBody } from './httpErrorMessage';
 
 export interface UserDto {
   id: number;
@@ -33,26 +34,15 @@ function normalizeUserDto(data: unknown): UserDto {
   };
 }
 
-function messageFromResponseBody(data: unknown): string | null {
-  if (data == null) return null;
-  if (typeof data === 'string') {
-    const t = data.trim();
-    return t.length > 0 ? t : null;
-  }
-  if (typeof data === 'object') {
-    const o = data as { title?: unknown; detail?: unknown };
-    if (typeof o.title === 'string' && o.title.trim()) return o.title.trim();
-    if (typeof o.detail === 'string' && o.detail.trim()) return o.detail.trim();
-  }
-  return null;
-}
-
 function getSignupErrorMessage(error: unknown): string {
+  if (error instanceof BattleArenaApiError) {
+    if (error.status === 409) return 'Username or email already exists.';
+    return error.message;
+  }
   if (axios.isAxiosError(error)) {
     const ax = error as AxiosError<unknown>;
     const status = ax.response?.status;
     const fromBody = messageFromResponseBody(ax.response?.data);
-
     if (fromBody) return fromBody;
     if (status === 409) return 'Username or email already exists.';
     if (status != null) return `Sign up failed (${status}).`;

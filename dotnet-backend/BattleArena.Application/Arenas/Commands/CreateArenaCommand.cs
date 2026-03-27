@@ -1,25 +1,38 @@
+using AutoMapper;
 using BattleArena.Application.Common.Interfaces;
-using static BattleArena.Application.Common.Dto;
+using BattleArena.Db;
 using MediatR;
+using static BattleArena.Application.Common.Dto;
 
 namespace BattleArena.Application.Arenas.Commands;
 
-public sealed record CreateArenaCommand(string ArenaName, int ArenaOwner) : IRequest<ArenaDto>;
+public sealed record CreateArenaCommand(string ArenaName, int ArenaOwner, int Wager) : IRequest<ArenaDto>;
 
-public sealed class CreateArenaCommandHandler(IArenaCommandRepository arenaCommandRepository)
+public sealed class CreateArenaCommandHandler(IArenaCommandRepository arenaCommandRepository, IMapper mapper, BattleArenaDbContext dbContext)
     : IRequestHandler<CreateArenaCommand, ArenaDto>
 {
     public async Task<ArenaDto> Handle(CreateArenaCommand request, CancellationToken cancellationToken)
     {
         var arenaCode = await GenerateUniqueArenaCodeAsync(cancellationToken);
+        var strategy = dbContext.Database.CreateExecutionStrategy();
 
-        var arena = await arenaCommandRepository.CreateArenaAsync(
-            request.ArenaName,
-            arenaCode,
-            request.ArenaOwner,
-            cancellationToken);
+        return await strategy.ExecuteAsync(
+            state: request,
+            operation: async (_, _, ct) =>
+            {
+                var arena = await arenaCommandRepository.CreateArenaAsync(
+                    request.ArenaName,
+                    arenaCode,
+                    request.ArenaOwner,
+                    request.Wager,
+                    cancellationToken);
 
-        return new ArenaDto(arena.Id, arena.ArenaName, arena.ArenaCode, arena.ArenaOwner, arena.Status);
+                await arenaCommandRepository.InsertArenaPlayerAsync(arena.Id, request.ArenaOwner, cancellationToken);
+
+                return mapper.Map<ArenaDto>(arena);
+            },
+            verifySucceeded: null,
+            cancellationToken: cancellationToken);
     }
 
     private async Task<string> GenerateUniqueArenaCodeAsync(CancellationToken cancellationToken)

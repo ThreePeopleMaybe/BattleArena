@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { finishGame } from '../../api/game';
 import {
   createTriviaGame,
+  DEFAULT_TRIVIA_GAME_TYPE_ID,
   getTriviaGameQuestionsByGameId,
   insertTriviaGameResult,
 } from '../../api/triviaGame';
@@ -15,7 +16,6 @@ import { theme } from '../../theme';
 import { Question, QuizQuestionResult, QuizResult } from '../../types';
 
 const QUIZ_TIME_LIMIT_MS = 100 * 1000; // 100 seconds
-const DEFAULT_GAME_TYPE_ID = 1;
 const BATTLE_INTRO_COUNTDOWN_SEC = 5;
 
 type Props = {
@@ -118,12 +118,12 @@ export default function QuizScreen({ navigation, route }: Props) {
 
     void (async () => {
       try {
-        console.log('xxx');
         if (gameId === null || gameId === undefined) {
           const created = await createTriviaGame({
-            gameTypeId: DEFAULT_GAME_TYPE_ID,
+            gameTypeId: DEFAULT_TRIVIA_GAME_TYPE_ID,
             wagerAmount: Math.max(0, Math.floor(wagerAmount ?? 0)),
             topicId: topicId,
+            arenaId: arenaId,
           });
 
           if (cancelled) return;
@@ -179,7 +179,7 @@ export default function QuizScreen({ navigation, route }: Props) {
         clearInterval(introInterval);
       }
     };
-  }, [topicId, opponentTopicId, wagerAmount, gameId, battleMode, fromChallenge]);
+  }, [topicId, opponentTopicId, wagerAmount, gameId, battleMode, fromChallenge, arenaId]);
 
   useEffect(() => {
     const ready = questions != null && questions.length > 0;

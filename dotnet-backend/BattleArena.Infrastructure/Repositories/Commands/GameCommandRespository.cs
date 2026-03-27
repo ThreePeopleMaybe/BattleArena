@@ -6,12 +6,13 @@ namespace BattleArena.Infrastructure.Repositories.Commands;
 
 public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameCommandRepository
 {
-    public async Task<long> InsertGameAsync(int gameTypeId, int wager, CancellationToken cancellationToken = default)
+    public async Task<long> InsertGameAsync(int gameTypeId, int wager, int? arenaId, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         var entity = new Game
         {
             GameTypeId = gameTypeId,
+            ArenaId = arenaId ?? null,
             Wager = wager,
             Status = GameStatus.New,
             StartedAt = now,

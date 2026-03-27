@@ -14,7 +14,7 @@ public class ArenaPlayer : AuditBase
     public int ArenaId { get; set; }
 
     [Column("user_id")]
-    public int UserId { get; set; }
+    public long UserId { get; set; }
 
     [Column("status")]
     public ArenaPlayerStatus Status { get; set; } = ArenaPlayerStatus.New;

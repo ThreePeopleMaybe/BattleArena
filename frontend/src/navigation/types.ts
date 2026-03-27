@@ -2,10 +2,15 @@ import type { QuizQuestionResult } from '../types';
 
 export type RootStackParamList = {
     Home: undefined;
-    Challenge: undefined;
+    Challenge: 
+        | {
+            arenaId: number;
+        }
+        | undefined;
     ArenaHome: undefined;
     JoinArena: undefined;
-    ArenaLobby: { arenaId: string; isHost?: boolean };
+    ArenaLobby: { arenaId: number; isHost?: boolean };
+    ArenaLeaderboard: { arenaId: number };
     Login: undefined;
     SignUp: undefined;
     Profile: undefined;
@@ -25,7 +30,7 @@ export type RootStackParamList = {
         opponentName?: string;
         wagerAmount?: number;
         fromArena?: boolean;
-        arenaId?: string;
+        arenaId?: number;
         fromChallenge?: boolean;
     } | undefined;
     Quiz: {
@@ -34,7 +39,7 @@ export type RootStackParamList = {
         battleMode?: boolean;
         opponentName?: string;
         wagerAmount?: number;
-        arenaId?: string;
+        arenaId?: number;
         fromChallenge?: boolean;
         gameId?: number;
     };
@@ -43,7 +48,7 @@ export type RootStackParamList = {
         opponentTopicId?: number;
         opponentName: string;
         wagerAmount: number;
-        arenaId?: string;
+        arenaId?: number;
         fromChallenge?: boolean;
         gameId?: number;
     };
@@ -60,7 +65,7 @@ export type RootStackParamList = {
         isChallenger?: boolean;
     };
     ArenaResult: {
-        arenaId: string;
+        arenaId: number;
         topicId: number;
         userCorrect: number;
         userTimeMs: number;
@@ -68,7 +73,7 @@ export type RootStackParamList = {
     };
     WaitingForPlayers: | {
         mode: 'arena';
-        arenaId: string;
+        arenaId: number;
         topicId?: number;
         userCorrect: number;
         userTimeMs: number;

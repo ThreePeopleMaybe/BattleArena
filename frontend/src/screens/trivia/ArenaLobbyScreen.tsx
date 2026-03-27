@@ -1,77 +1,86 @@
 import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getArenaById, leaveArena } from '../../api/arena';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
-import {
-  deleteArena,
-  getArenaById,
-  leaveArena,
-  updateArenaWager,
-  type Arena,
-} from '../../storage/arenaStorage';
-import { getWalletBalance } from '../../storage/walletStorage';
 import { globalStyles } from '../../styles/globalStyles';
 import { theme } from '../../theme';
+import type { Arena, ArenaMember } from '../../types';
 
-const WAGER_PRESETS = [0, 1, 5, 10, 25];
-
-function emailsMatch(a?: string | null, b?: string | null): boolean {
-  if (!a || !b) return false;
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
-}
+type LobbyPlayerRow = ArenaMember & { isHost: boolean };
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ArenaLobby'>;
   route: RouteProp<RootStackParamList, 'ArenaLobby'>;
 };
 
+function buildLobbyPlayers(arena: Arena, currentUserId?: number, currentUsername?: string): LobbyPlayerRow[] {
+  const ownerId = Number(arena.arenaOwner);
+  const map = new Map<number, LobbyPlayerRow>();
+
+  for (const m of arena.members) {
+    const id = Number(m.userId);
+    if (!Number.isFinite(id)) continue;
+    map.set(id, {
+      userId: id,
+      userName: m.userName,
+      isHost: id === ownerId,
+    });
+  }
+
+  if (Number.isFinite(ownerId) && !map.has(ownerId)) {
+    const nameFromSelf =
+      currentUserId != null && Number(currentUserId) === ownerId && currentUsername?.trim()
+        ? currentUsername.trim()
+        : 'Host';
+    map.set(ownerId, {
+      userId: ownerId,
+      userName: nameFromSelf,
+      isHost: true,
+    });
+  } else {
+    for (const row of map.values()) {
+      if (Number(row.userId) === ownerId) row.isHost = true;
+    }
+  }
+
+  const list = [...map.values()];
+  list.sort((a, b) => {
+    if (a.isHost !== b.isHost) return a.isHost ? -1 : 1;
+    return a.userName.localeCompare(b.userName, undefined, { sensitivity: 'base' });
+  });
+  return list;
+}
+
 export default function ArenaLobbyScreen({ navigation, route }: Props) {
   const { arenaId, isHost: isHostParam } = route.params;
   const { isLoggedIn, user } = useAuth();
 
   const [arena, setArena] = useState<Arena | null>(null);
-  const [wagerModalVisible, setWagerModalVisible] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   const loadArena = useCallback(async () => {
-    const a = await getArenaById(arenaId);
-    setArena(a ?? null);
-  }, [arenaId]);
-
-  const handleSetWager = useCallback(async (amount: number) => {
-    await updateArenaWager(arenaId, amount);
-    setArena((prev) => prev ? { ...prev, wagerAmount: amount } : null);
-    setWagerModalVisible(false);
-  }, [arenaId]);
-
-  const openWagerModal = useCallback(() => {
-    if (!isLoggedIn) {
-      navigation.navigate('Login');
-      return;
+    try {
+      const a = await getArenaById(arenaId);
+      setArena(a ?? null);
+    } catch {
+      setArena(null);
     }
-    getWalletBalance().then(setWalletBalance);
-    setWagerModalVisible(true);
-  }, [isLoggedIn, navigation]);
+  }, [arenaId]);
 
   useFocusEffect(
     useCallback(() => {
       loadArena();
-      if (isLoggedIn) getWalletBalance().then(setWalletBalance);
       const interval = setInterval(loadArena, 3000);
       return () => clearInterval(interval);
-    }, [loadArena, isLoggedIn])
+    }, [loadArena])
+  );
+
+  const lobbyPlayers = useMemo(
+    () => (arena ? buildLobbyPlayers(arena, user?.userId, user?.username) : []),
+    [arena, user?.userId, user?.username]
   );
 
   if (!arena) {
@@ -82,34 +91,23 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
     );
   }
 
-  const userId = user?.email;
-  const isHostEffective = 
-    Boolean(userId && isLoggedIn) &&
-    (isHostParam === true || emailsMatch(arena.createdByUserId, userId));
+  const isHostEffective =
+    isLoggedIn &&
+    (isHostParam === true || (user?.userId != null && arena.arenaOwner === user.userId));
 
-  const isMemberEffective = Boolean(
-    userId && arena.members.some((m) => emailsMatch(m.id, userId))
-  );
-
-  const canDeleteArena = isLoggedIn && isHostEffective;
-  const canLeaveArena = isLoggedIn && isMemberEffective && !isHostEffective;
+  const isHost = isLoggedIn && isHostEffective;
 
   const confirmDeleteArena = () => {
-    Alert.alert(
-      'Delete arena?',
-      'This removes the arena for everyone. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteArena(arenaId);
-            navigation.navigate('ArenaHome');
-          },
+    Alert.alert('Delete arena?', 'This removes the arena for everyone. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          navigation.navigate('ArenaHome');
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const confirmLeaveArena = () => {
@@ -122,7 +120,15 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
           text: 'Leave',
           style: 'destructive',
           onPress: async () => {
-            if (userId) await leaveArena(arenaId, userId);
+            const uid = user?.userId;
+            const n = Number(arenaId);
+            if (uid != null && Number.isFinite(n) && n === arenaId) {
+              try {
+                await leaveArena(n, uid);
+              } catch {
+                /* still navigate */
+              }
+            }
             navigation.navigate('ArenaHome');
           },
         },
@@ -130,141 +136,92 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
     );
   };
 
-return (
-  <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
-    <ScrollView 
-      style={styles.mainScroll}
-      contentContainerStyle={styles.mainScrollContent}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.joinCodeBox}>
-        <Text style={styles.joinCodeLabel}>Arena join code</Text>
-        <Text style={styles.joinCodeValue}>{arena.joinCode}</Text>
-        <Text style={styles.joinCodeHint}>Share this code so players can join</Text>
-      </View>
-
-      <View style={styles.wagerDisplayRow}>
-        <View style={styles.wagerSpacer} />
-        <View style={styles.wagerCenterSection}>
-          <Text style={styles.wagerLabel}>{!isLoggedIn ? '' : 'Wager'}</Text>
-          <TouchableOpacity
-            style={[
-              styles.wagerChip,
-              styles.wagerChipDisplay,
-              arena.wagerAmount > 0 && styles.wagerChipSelected,
-              !isLoggedIn && styles.wagerChipDisabled,
-            ]}
-            onPress={openWagerModal}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.wagerChipText,
-                arena.wagerAmount > 0 && styles.wagerChipTextSelected,
-                !isLoggedIn && styles.wagerChipTextDisabled,
-              ]}
-            >
-              {!isLoggedIn ? 'Log in to wager' : arena.wagerAmount === 0 ? 'None' : `$${arena.wagerAmount}`}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.wagerSpacer} />
-      </View>
-      {(canDeleteArena || canLeaveArena) && (
-        <View style={styles.dangerRow}>
-          {canDeleteArena && (
-            <TouchableOpacity style={styles.dangerButton} onPress={confirmDeleteArena} activeOpacity={0.8}>
-              <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
-              <Text style={styles.dangerButtonText}>Delete arena</Text>
-            </TouchableOpacity>
-          )}
-          {canLeaveArena && (
-            <TouchableOpacity style={styles.dangerButton} onPress={confirmLeaveArena} activeOpacity={0.8}>
-              <Ionicons name="exit-outline" size={18} color={theme.colors.textMuted} />
-              <Text style={styles.leaveButtonText}>Leave arena</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      <TouchableOpacity
-        style={[globalStyles.primaryButton, styles.startButton, arena.members.length === 0 && styles.startButtonDisabled]}
-        onPress={() => arena.members.length > 0 && navigation.navigate('Topics', { mode: 'battle', fromArena: true, wagerAmount: arena.wagerAmount, arenaId: arena.id })}
-        activeOpacity={0.8}
-        disabled={arena.members.length === 0}
+  return (
+    <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
+      <ScrollView
+        style={styles.mainScroll}
+        contentContainerStyle={styles.mainScrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={[globalStyles.primaryButtonText, arena.members.length === 0 && styles.startButtonTextDisabled]}>Open Arena</Text>
-      </TouchableOpacity>
+        <View style={styles.joinCodeBox}>
+          <Text style={styles.joinCodeLabel}>Arena join code</Text>
+          <Text style={styles.joinCodeValue}>{arena.arenaCode}</Text>
+          <Text style={styles.joinCodeHint}>Share this code so players can join</Text>
+        </View>
 
-      <Text style={styles.membersLabel}>Players ({arena.members.length})</Text>
-      <View style={styles.memberList}>
-        {arena.members.map((m) => (
-          <View key={m.id} style={styles.memberRow}>
-            <Ionicons name="person" size={20} color={theme.colors.primary} />
-            <Text style={styles.memberName}>{m.name}</Text>
+        <View style={styles.wagerDisplayRow}>
+          <View style={styles.wagerSpacer} />
+          <View style={styles.wagerCenterSection}>
+            <Text style={styles.wagerLabel}>{isLoggedIn ? '' : 'Wager'}</Text>
+            <View style={[styles.wagerChip, styles.wagerChipDisplay, styles.wagerChipReadOnly]}>
+              <Text style={[styles.wagerChipText, styles.wagerChipTextReadOnly]}>
+                {arena.wagerAmount === 0 ? 'None' : `$${arena.wagerAmount}`}
+              </Text>
+            </View>
           </View>
-        ))}
-      </View>
-</ScrollView>
-<Modal
-      visible={wagerModalVisible}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setWagerModalVisible(false)}
-    >
-      <Pressable style={globalStyles.modalOverlay} onPress={() => setWagerModalVisible(false)}>
-        <Pressable style={globalStyles.modalContent} onPress={(e) => e.stopPropagation()}>
-          <Text style={globalStyles.modalTitle}>Select wager (for everyone)</Text>
-          <View style={styles.modalChips}>
-            {WAGER_PRESETS.map((amount) => {
-              const exceedsBalance = amount > 0 && walletBalance !== null && amount > walletBalance;
-              return (
-                <TouchableOpacity
-                  key={amount}
-                  style={[
-                    styles.wagerChip,
-                    arena.wagerAmount === amount && styles.wagerChipSelected,
-                    exceedsBalance && styles.wagerChipDisabled,
-                  ]}
-                  onPress={() => !exceedsBalance && handleSetWager(amount)}
-                  activeOpacity={0.8}
-                  disabled={exceedsBalance}
-                >
-                  <Text
-                    style={[
-                      styles.wagerChipText,
-                      arena.wagerAmount === amount && styles.wagerChipTextSelected,
-                      exceedsBalance && styles.wagerChipTextDisabled,
-                    ]}
-                  >
-                    {amount === 0 ? 'None' : `$${amount}`}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={styles.wagerSpacer}>
+            {isHost ? (
+              <TouchableOpacity
+                style={styles.dangerButton}
+                onPress={confirmDeleteArena}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
+                <Text style={styles.dangerButtonText}>Delete arena</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.leaveRowButton}
+                onPress={confirmLeaveArena}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="exit-outline" size={18} color={theme.colors.textMuted} />
+                <Text style={styles.leaveButtonText}>Leave arena</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <TouchableOpacity
-            style={globalStyles.primaryButton}
-            onPress={() => setWagerModalVisible(false)}
-            activeOpacity={0.8}
-          >
-            <Text style={globalStyles.primaryButtonText}>Done</Text>
-          </TouchableOpacity>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  </View>
-);
+        </View>
+
+        <TouchableOpacity
+          style={[globalStyles.secondaryButton, styles.arenaChallengesButton]}
+          onPress={() => navigation.navigate('Challenge', { arenaId: arena.id })}
+          activeOpacity={0.8}
+        >
+          <Text style={globalStyles.secondaryButtonText}>Arena challenges</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[globalStyles.secondaryButton, styles.arenaLeaderboardButton]}
+          onPress={() => navigation.navigate('ArenaLeaderboard', { arenaId: arena.id })}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="trophy-outline" size={20} color={theme.colors.primary} />
+          <Text style={globalStyles.secondaryButtonText}>Arena leaderboard</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.membersLabel}>Players ({lobbyPlayers.length})</Text>
+        <View style={styles.memberList}>
+          {lobbyPlayers.map((m) => (
+            <View key={m.userId} style={styles.memberRow}>
+              <Ionicons name="person" size={20} color={theme.colors.primary} />
+              <Text style={styles.memberName}>{m.userName}</Text>
+              {m.isHost && (
+                <View style={styles.hostBadge}>
+                  <Text style={styles.hostBadgeText}>Host</Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  mainScroll:{
-    flex: 1,
-  },
-  mainScrollContent: {
-    paddingBottom: theme.spacing.lg,
-  },
+  mainScroll: { flex: 1 },
+  mainScrollContent: { paddingBottom: theme.spacing.lg },
   loading: {
     fontSize: theme.fontSize.md,
     color: theme.colors.textMuted,
@@ -278,7 +235,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
     borderWidth: 2,
     borderColor: theme.colors.primary,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   joinCodeLabel: {
     fontSize: theme.fontSize.sm,
@@ -287,7 +244,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
     textAlign: 'center',
     textTransform: 'uppercase',
-    letterSpacing: 1
+    letterSpacing: 1,
   },
   joinCodeValue: {
     fontSize: 32,
@@ -311,11 +268,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  wagerCenterSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  wagerCenterSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   wagerLabel: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.textMuted,
@@ -333,64 +286,24 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
   },
-  wagerChipSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+  wagerChipReadOnly: {
+    opacity: 0.75,
+    borderColor: theme.colors.surfaceLight,
+    backgroundColor: theme.colors.background,
   },
   wagerChipText: {
     fontSize: theme.fontSize.md,
     fontWeight: '600',
     color: theme.colors.textMuted,
   },
-  wagerChipTextSelected: {
-    color: theme.colors.primary,
-  },
-  wagerChipDisabled: {
-    opacity: 0.8,
-  },
-  wagerChipTextDisabled: {
-    color: theme.colors.textMuted,
-  },
-  balanceChip: {
-    backgroundColor: theme.colors.surface,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radius.sm,
-    borderWidth: 2,
-    borderColor: theme.colors.success,
-  },
-  balanceLabel: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    marginBottom: 2,
-  },
-  balanceAmount: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '700',
-    color: theme.colors.success,
-  },
-  modalChips: {
+  wagerChipTextReadOnly: { color: theme.colors.textMuted },
+  arenaChallengesButton: { marginBottom: theme.spacing.lg, width: '100%' },
+  arenaLeaderboardButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: theme.spacing.sm,
-    justifyContent: 'center',
     marginBottom: theme.spacing.lg,
-  },
-  startButton: {
-    marginBottom: theme.spacing.lg,
-  },
-  startButtonDisabled: {
-    opacity: 0.5,
-  },
-  startButtonTextDisabled: {
-    color: theme.colors.textMuted,
-  },
-  dangerRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-    justifyContent: 'center',
     width: '100%',
   },
   dangerButton: {
@@ -404,39 +317,52 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.surfaceLight,
     backgroundColor: theme.colors.surface,
   },
-  dangerButtonText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.error,
+  dangerButtonText: { fontSize: theme.fontSize.sm, fontWeight: '600', color: theme.colors.error },
+  leaveRowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
+    borderWidth: 2,
+    borderColor: theme.colors.surfaceLight,
+    backgroundColor: theme.colors.surface,
   },
-  leaveButtonText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: '600',
-    color: theme.colors.textMuted,
-  },
+  leaveButtonText: { fontSize: theme.fontSize.sm, fontWeight: '600', color: theme.colors.textMuted },
   membersLabel: {
     fontSize: theme.fontSize.sm,
     fontWeight: '600',
     color: theme.colors.textMuted,
     marginBottom: theme.spacing.sm,
   },
-  memberList: {
-    marginBottom: theme.spacing.lg,
-  },
+  memberList: { marginBottom: theme.spacing.lg },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.sm,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.xs,
     borderWidth: 1,
     borderColor: theme.colors.surfaceLight,
+    gap: theme.spacing.sm,
   },
-  memberName: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginLeft: theme.spacing.sm,
+  memberName: { flex: 1, minWidth: 0, fontSize: theme.fontSize.md, fontWeight: '600', color: theme.colors.text },
+  hostBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radius.sm,
+    backgroundColor: 'rgba(99, 102, 241, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.5)',
+  },
+  hostBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.primaryLight,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

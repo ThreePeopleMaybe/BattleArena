@@ -17,12 +17,8 @@ public static class TriviaGameApi
         group.MapPost("results", InsertTriviaGameResult)
             .Produces<long>(StatusCodes.Status201Created);
 
-        group.MapGet("active/{gameTypeId:int}", GetActiveTriviaGame)
-            .Produces<List<ActiveTriviaGameDto>>();
-
-        group.MapGet("winner/{gameId:long}", GetTriviaGameWinner)
-            .Produces<TriviaGameWinnerDto>()
-            .Produces(StatusCodes.Status404NotFound);
+        group.MapGet("active/{gameTypeId:int}/{arenaId:int}", GetActiveTriviaGame)
+            .Produces<List<ActiveTriviaGameData>>();
 
         group.MapGet("{gameId:long}", GetTriviaGameById)
             .Produces<IReadOnlyList<QuestionDto>>()
@@ -48,24 +44,17 @@ public static class TriviaGameApi
     static async Task<IResult> CreateTriviaGame(CreateTriviaGameRequest request, ISender sender, CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateTriviaGameCommand(request.GameTypeId, request.WagerAmount, request.TopicId),
+            new CreateTriviaGameCommand(request.GameTypeId, request.WagerAmount, request.TopicId, request.ArenaId),
             cancellationToken);
 
         return Results.Created($"/api/v1/trivia-games/{result.GameId}", result);
     }
 
-    static async Task<IResult> GetActiveTriviaGame(int gameTypeId, ISender sender, CancellationToken cancellationToken)
+    static async Task<IResult> GetActiveTriviaGame(int gameTypeId, int arenaId, ISender sender, CancellationToken cancellationToken)
     {
-        var games = await sender.Send(new GetActiveTriviaGameQuery(gameTypeId), cancellationToken);
+        var games = await sender.Send(new GetActiveTriviaGameQuery(gameTypeId, arenaId), cancellationToken);
         return Results.Ok(games);
     }
-
-    static async Task<IResult> GetTriviaGameWinner(long gameId, ISender sender, CancellationToken cancellationToken)
-    {
-        var winner = await sender.Send(new GetTriviaGameWinnerQuery(gameId), cancellationToken);
-        return winner is null ? Results.NotFound() : Results.Ok(winner);
-    }
-
     static async Task<IResult> GetTriviaGameById(long gameId, ISender sender, CancellationToken cancellationToken)
     {
         var triviaGame = await sender.Send(new GetTriviaGameQuestionsByGameIdQuery(gameId), cancellationToken);
@@ -81,4 +70,4 @@ public sealed record CreateTriviaGameResultRequest(
     int TimeTakenInSeconds,
     IReadOnlyList<TriviaGameResultDetailDto> Details);
 
-public sealed record CreateTriviaGameRequest(int GameTypeId, int WagerAmount, int TopicId);
+public sealed record CreateTriviaGameRequest(int GameTypeId, int WagerAmount, int TopicId, int ArenaId);

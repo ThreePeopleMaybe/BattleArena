@@ -21,7 +21,7 @@ public static class GameApi
 
     static async Task<IResult> InsertGame(CreateGameRequest request, ISender sender, CancellationToken cancellationToken)
     {
-        var id = await sender.Send(new InsertGameCommand(request.GameTypeId, request.Wager), cancellationToken);
+        var id = await sender.Send(new InsertGameCommand(request.GameTypeId, request.Wager, request.ArenaId), cancellationToken);
         return Results.Created($"/api/v1/games/games/{id}", id);
     }
 
@@ -33,4 +33,4 @@ public static class GameApi
     }
 }
 
-public sealed record CreateGameRequest(int GameTypeId, int Wager);
+public sealed record CreateGameRequest(int GameTypeId, int Wager, int? ArenaId);

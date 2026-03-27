@@ -1,3 +1,8 @@
+export interface QuestionTopic {
+    id: number;
+    name: string;
+}
+
 export interface Question {
     id: number;
     topicId: number;
@@ -36,6 +41,30 @@ export interface ActiveTriviaGame {
     wagerAmount: number;
     topicId: number;
     topicName: string;
+}
+
+export interface ArenaLeaderboardResult{
+    userId: number;
+    userName: string;
+    wins: number;
+    losses: number;
+    gamesPlayed: number;
+    totalCorrectAnswers: number;
+    totalTimeTakenInSeconds: number;
+}
+
+export interface Arena{
+    id: number;
+    arenaName: string;
+    arenaCode: string;
+    arenaOwner: number;
+    wagerAmount: number;
+    members: ArenaMember[];
+}
+
+export interface ArenaMember{
+    userId: number;
+    userName: string;
 }
 
 export interface BattleState {

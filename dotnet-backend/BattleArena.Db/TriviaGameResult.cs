@@ -17,8 +17,11 @@ public class TriviaGameResult : AuditBase
     [Column("question_topic_id")]
     public int QuestionTopicId { get; set; }
     [Column("number_of_correct_answers")]
-    public int NumerOfCorrectAnswers { get; set; }
+    public int NumberOfCorrectAnswers { get; set; }
 
     [Column("time_taken_in_seconds")]
     public int TimeTakenInSeconds { get; set; }
+
+    [Column("is_winner")]
+    public bool? IsWinner { get; set; }
 }

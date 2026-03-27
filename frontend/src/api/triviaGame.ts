@@ -1,6 +1,8 @@
 import type { ActiveTriviaGame, Question, QuizResult } from '../types';
 import { battleArenaClient } from './battleArenaClient';
 
+export const DEFAULT_TRIVIA_GAME_TYPE_ID = 1;
+
 export interface CreateTriviaGameResponse {
     gameId: number;
     questions: Question[];
@@ -10,11 +12,13 @@ export async function createTriviaGame(params: {
     gameTypeId: number;
     wagerAmount: number;
     topicId: number;
+    arenaId?: number;
 }): Promise<CreateTriviaGameResponse> {
     const { data } = await battleArenaClient.post<CreateTriviaGameResponse>('/api/v1/trivia-games/create', {
         gameTypeId: params.gameTypeId,
         wagerAmount: params.wagerAmount,
         topicId: params.topicId,
+        arenaId: params.arenaId,
     });
 
     return {
@@ -43,7 +47,7 @@ export async function insertTriviaGameResult(payload: {
     return typeof data === 'number' ? data : Number(data);
 }
 
-export async function getActiveTriviaGame(gameTypeId: number): Promise<ActiveTriviaGame[]> {
+export async function getActiveTriviaGame(gameTypeId: number, arenaId: number = 0): Promise<ActiveTriviaGame[]> {
     const { data } = await battleArenaClient.get<ActiveTriviaGame[]>(`/api/v1/trivia-games/active/${gameTypeId}`);
     return Array.isArray(data) ? data : [];
 }
