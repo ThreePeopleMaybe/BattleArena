@@ -8,20 +8,16 @@ import { TouchableOpacity, View } from 'react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import { RootStackParamList } from './src/navigation/types';
 import HomeScreen from './src/screens/HomeScreen';
-import LoginScreen from './src/screens/LoginScreen';
-import MatchingOpponentScreen from './src/screens/MatchingOpponentScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import SelectOpponentScreen from './src/screens/SelectOpponentScreen';
-import SignUpScreen from './src/screens/SignUpScreen';
-import ArenaHomeScreen from './src/screens/trivia/ArenaHomeScreen';
-import ArenaLeaderboardScreen from './src/screens/trivia/ArenaLeaderboardScreen';
-import ArenaLobbyScreen from './src/screens/trivia/ArenaLobbyScreen';
-import BattleResultScreen from './src/screens/trivia/BattleResultScreen';
-import ChallengeScreen from './src/screens/trivia/ChallengeScreen';
-import JoinArenaScreen from './src/screens/trivia/JoinArenaScreen';
+import ArenaHomeScreen from './src/screens/arena/ArenaHomeScreen';
+import ArenaLeaderboardScreen from './src/screens/arena/ArenaLeaderboardScreen';
+import ArenaLobbyScreen from './src/screens/arena/ArenaLobbyScreen';
+import JoinArenaScreen from './src/screens/arena/JoinArenaScreen';
+import ChallengeScreen from './src/screens/core/ChallengeScreen';
+import LoginScreen from './src/screens/core/LoginScreen';
+import ProfileScreen from './src/screens/core/ProfileScreen';
+import SignUpScreen from './src/screens/core/SignUpScreen';
+import QuizResultScreen from './src/screens/trivia/QuizResultScreen';
 import QuizScreen from './src/screens/trivia/QuizScreen';
-import TopicsScreen from './src/screens/trivia/TopicsScreen';
-import WaitingForPlayersScreen from './src/screens/trivia/WaitingForPlayersScreen';
 import { theme } from './src/theme';
 
 const queryClient = new QueryClient({
@@ -67,15 +63,8 @@ export default function App() {
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Log in', ...noBackButton }} />
             <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: 'Sign up', ...noBackButton }} />
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
-            <Stack.Screen
-              name="SelectOpponent"
-              component={SelectOpponentScreen}
-              options={(opts) => ({ title: 'Battle' })}
-            />
-            <Stack.Screen name="MatchingOpponent" component={MatchingOpponentScreen} options={{ title: 'Finding opponent', ...noBackButton }} />
-            <Stack.Screen name="Topics" component={TopicsScreen} options={{ title: 'Topics', ...noBackButton }} />
             <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz', ...noBackButton }} />
-            <Stack.Screen name="BattleResult" component={BattleResultScreen} options={{ title: 'Results', ...noBackButton }} />
+            <Stack.Screen name="QuizResult" component={QuizResultScreen} options={{ title: 'Results', ...noBackButton }} />
             <Stack.Screen
               name="Challenge"
               component={ChallengeScreen}
@@ -93,7 +82,6 @@ export default function App() {
               component={ArenaLeaderboardScreen}
               options={() => ({ title: 'Leaderboard'})}
             />  
-            <Stack.Screen name="WaitingForPlayers" component={WaitingForPlayersScreen} options={{ title: 'Results', ...noBackButton }} />
           </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>

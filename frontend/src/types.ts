@@ -28,14 +28,6 @@ export interface QuizResult {
     choiceId: number;
 }
 
-export interface BattleParticipant {
-    id: string;
-    name: string;
-    correct: number;
-    timeMs: number;
-    isCurrentUser?: boolean;
-}
-
 export interface ActiveTriviaGame {
     gameId: number;
     userId: number;
@@ -66,14 +58,24 @@ export interface Arena{
 }
 
 export interface ArenaMember{
+    arenaId: number;
     userId: number;
     userName: string;
 }
 
-export interface BattleState {
-    id: string;
-    topicId: number;
-    participants: BattleParticipant[];
-    status: 'waiting' | 'playing' | 'finished';
-    questionCount: number;
-}
+export type GameRealtimePayload = {
+  arenaId: number;
+  gameId: number;
+  userId: number;
+  userName: string;
+  topicName: string;
+  wagerAmount: number;
+  status: string;
+};
+
+export type ArenaMemberPayload = {
+  arenaId: number;
+  userId: number;
+  userName: string;
+  action: string;
+};

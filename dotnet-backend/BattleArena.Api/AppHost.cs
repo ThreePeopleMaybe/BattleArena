@@ -1,4 +1,7 @@
+using System.Text.Json;
 using BattleArena.Api;
+using BattleArena.Api.Realtime;
+using BattleArena.Application.Common.Interfaces;
 using BattleArena.Application.Common.Mapping;
 using BattleArena.Application.Users.Queries;
 using MediatR;
@@ -26,6 +29,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddSignalR().AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
+builder.Services.AddSingleton<IRealtimeNotifier, RealtimeNotifier>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -39,6 +48,7 @@ else
 }
 
 app.UseCors();
+app.MapHub<Hub>(Hub.HubPath);
 app.MapUserApi();
 app.MapPlayerApi();
 app.MapTriviaGameApi();

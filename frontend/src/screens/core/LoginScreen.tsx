@@ -1,10 +1,10 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
-import { useLoginForm } from '../hooks/useLoginForm';
-import { RootStackParamList } from '../navigation/types';
-import { globalStyles } from '../styles/globalStyles';
-import { theme } from '../theme';
+import { useLoginForm } from '../../hooks/useLoginForm';
+import { RootStackParamList } from '../../navigation/types';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Login'>;

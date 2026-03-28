@@ -10,12 +10,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { UserDto } from '../api/users';
-import { useAuth } from '../context/AuthContext';
-import { useSignUpForm, type SignUpCredentials } from '../hooks/useSignUpForm';
-import { RootStackParamList } from '../navigation/types';
-import { globalStyles } from '../styles/globalStyles';
-import { theme } from '../theme';
+import type { UserDto } from '../../api/users';
+import { useAuth } from '../../context/AuthContext';
+import { useSignUpForm, type SignUpCredentials } from '../../hooks/useSignUpForm';
+import { RootStackParamList } from '../../navigation/types';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'SignUp'>;

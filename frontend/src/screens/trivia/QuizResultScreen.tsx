@@ -8,8 +8,8 @@ import { globalStyles } from '../../styles/globalStyles';
 import { theme } from '../../theme';
 
 type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'BattleResult'>;
-  route: RouteProp<RootStackParamList, 'BattleResult'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'QuizResult'>;
+  route: RouteProp<RootStackParamList, 'QuizResult'>;
 };
 
 function formatTime(ms: number): string {
@@ -19,57 +19,27 @@ function formatTime(ms: number): string {
   return min > 0 ? `${min}:${s.toString().padStart(2, '0')}` : `${s}s`;
 }
 
-export default function BattleResultScreen({ navigation, route }: Props) {
-  const { userCorrect, userTimeMs, opponentCorrect, opponentTimeMs, opponentName, questionResults, wagerAmount, fromChallenge, arenaId: resultArenaId } = route.params;
-  const isBattle = !!opponentName;
+export default function QuizResultScreen({ navigation, route }: Props) {
+  const { userCorrect, userTimeMs, questionResults, wagerAmount, fromChallenge, arenaId: resultArenaId } = route.params;
   const walletApplied = useRef(false);
 
   let winner: 'you' | 'opponent' | 'tie' = 'you';
-  if (isBattle) {
-    if (opponentCorrect > userCorrect) winner = 'opponent';
-    else if (opponentCorrect === userCorrect && opponentTimeMs < userTimeMs) winner = 'opponent';
-    else if (opponentCorrect === userCorrect && opponentTimeMs === userTimeMs) winner = 'tie';
-  }
 
   useEffect(() => {
-    if (walletApplied.current || !isBattle || wagerAmount == null || wagerAmount <= 0) return;
+    if (walletApplied.current || wagerAmount == null || wagerAmount <= 0) return;
     walletApplied.current = true;
     if (winner === 'you') addToWallet(wagerAmount);
     else if (winner === 'opponent') addToWallet(-wagerAmount);
-  }, [isBattle, wagerAmount, winner]);
+  }, [wagerAmount, winner]);
 
   return (
     <ScrollView style={globalStyles.screenContainer} contentContainerStyle={styles.content}>
-      {isBattle ? (
-        <>
-          <Text style={globalStyles.screenTitleLarge}>
-            {winner === 'you' && 'You win!'}
-            {winner === 'opponent' && 'You lost'}
-            {winner === 'tie' && "It's a tie!"}
-          </Text>
-          <View style={styles.scoreCard}>
-            <View style={[styles.row, styles.rowBorder, winner === 'you' && styles.rowHighlight]}>
-              <Text style={styles.label}>You</Text>
-              <Text style={styles.value}>{userCorrect} correct</Text>
-              <Text style={styles.time}>{formatTime(userTimeMs)}</Text>
-            </View>
-            <View style={[styles.row, winner === 'opponent' && styles.rowHighlight]}>
-              <Text style={styles.label}>{opponentName}</Text>
-              <Text style={styles.value}>{opponentCorrect} correct</Text>
-              <Text style={styles.time}>{formatTime(opponentTimeMs)}</Text>
-            </View>
-          </View>
-        </>
-      ) : (
-        <>
           <Text style={globalStyles.screenTitleLarge}>Quiz complete</Text>
           <View style={styles.soloScore}>
             <Text style={styles.soloScoreValue}>{userCorrect}/{questionResults?.length ?? 10}</Text>
             <Text style={styles.soloScoreLabel}>correct</Text>
             <Text style={styles.soloTime}>{formatTime(userTimeMs)}</Text>
           </View>
-        </>
-      )}
 
       {questionResults && questionResults.length > 0 && (
         <View style={styles.reviewSection}>
@@ -102,16 +72,9 @@ export default function BattleResultScreen({ navigation, route }: Props) {
       <TouchableOpacity
         style={globalStyles.primaryButton}
         onPress={() => {
-          if (fromChallenge) {
             navigation.navigate('Challenge',
               typeof resultArenaId === 'number' && resultArenaId > 0 ? { arenaId: resultArenaId } : undefined
             );
-          } else {
-            navigation.navigate('SelectOpponent', { 
-              battleAgainOpponentName: opponentName, 
-              wagerAmount
-            });
-          }
         }}
         activeOpacity={0.8}>
         <Text style={globalStyles.primaryButtonText}>Battle again</Text>

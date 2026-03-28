@@ -49,16 +49,6 @@ export default function HomeScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.card, styles.battleCard]}
-        onPress={() => navigation.navigate('SelectOpponent')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.cardIcon}>⚔️</Text>
-        <Text style={styles.cardTitle}>Battle Mode</Text>
-        <Text style={styles.cardDesc}>Same topic, same questions. Most correct in the shortest time wins.</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
         style={[styles.card, styles.arenaCard]}
         onPress={() => navigation.navigate('ArenaHome')}
         activeOpacity={0.8}
