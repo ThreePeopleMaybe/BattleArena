@@ -17,6 +17,10 @@ public class Game : AuditBase
     [Column("wager")]
     public int Wager { get; set; }
 
+    [Column("started_by")]
+    public long StartedBy { get; set; }
+    [Column("question_topic_id")]
+    public int? QuestionTopicId { get; set; }
     [Column("game_status", TypeName = "varchar(32)")]
     public required GameStatus Status { get; set; } = GameStatus.New;
 

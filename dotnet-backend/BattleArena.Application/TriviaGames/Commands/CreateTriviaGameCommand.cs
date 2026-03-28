@@ -7,7 +7,7 @@ using static BattleArena.Application.Common.Dto;
 
 namespace BattleArena.Application.TriviaGames.Commands;
 
-public sealed record CreateTriviaGameCommand(int GameTypeId, int WagerAmount, int TopicId, int ArenaId)
+public sealed record CreateTriviaGameCommand(int GameTypeId, int WagerAmount, long StartedBy, int TopicId, int ArenaId)
     : IRequest<CreateTriviaGameResult>;
 
 public sealed class CreateTriviaGameCommandHandler(
@@ -28,7 +28,7 @@ public sealed class CreateTriviaGameCommandHandler(
             {
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
 
-                var gameId = await sender.Send(new InsertGameCommand(request.GameTypeId, request.WagerAmount, request.ArenaId), ct);
+                var gameId = await sender.Send(new InsertGameCommand(request.GameTypeId, request.WagerAmount, request.StartedBy, request.ArenaId, request.TopicId), ct);
 
                 await triviaGameCommandRepository.InsertTriviaGameQuestionAsync(
                     gameId,

@@ -20,7 +20,7 @@ function formatTime(ms: number): string {
 }
 
 export default function BattleResultScreen({ navigation, route }: Props) {
-  const { userCorrect, userTimeMs, opponentCorrect, opponentTimeMs, opponentName, questionResults, wagerAmount, fromChallenge } = route.params;
+  const { userCorrect, userTimeMs, opponentCorrect, opponentTimeMs, opponentName, questionResults, wagerAmount, fromChallenge, arenaId: resultArenaId } = route.params;
   const isBattle = !!opponentName;
   const walletApplied = useRef(false);
 
@@ -103,7 +103,9 @@ export default function BattleResultScreen({ navigation, route }: Props) {
         style={globalStyles.primaryButton}
         onPress={() => {
           if (fromChallenge) {
-            navigation.navigate('Challenge');
+            navigation.navigate('Challenge',
+              typeof resultArenaId === 'number' && resultArenaId > 0 ? { arenaId: resultArenaId } : undefined
+            );
           } else {
             navigation.navigate('SelectOpponent', { 
               battleAgainOpponentName: opponentName, 

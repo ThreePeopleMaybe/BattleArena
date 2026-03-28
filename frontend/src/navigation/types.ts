@@ -62,6 +62,7 @@ export type RootStackParamList = {
         questionResults?: QuizQuestionResult[];
         wagerAmount?: number;
         fromChallenge?: boolean;
+        arenaId?: number;
         isChallenger?: boolean;
     };
     ArenaResult: {

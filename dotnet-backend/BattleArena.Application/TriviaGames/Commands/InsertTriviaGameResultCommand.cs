@@ -8,7 +8,6 @@ namespace BattleArena.Application.TriviaGames.Commands;
 public sealed record InsertTriviaGameResultCommand(
     long GameId,
     long UserId,
-    int TopicId,
     int NumberOfCorrectAnswers,
     int TimeTakenInSeconds,
     IReadOnlyList<Dto.TriviaGameResultDetailDto> Details) : IRequest<long>;
@@ -60,7 +59,6 @@ public sealed class InsertTriviaGameResultCommandHandler(
                 var id = await triviaGameCommandRepository.InsertTriviaGameResultAsync(
                     request.GameId,
                     request.UserId,
-                    request.TopicId,
                     request.NumberOfCorrectAnswers,
                     request.TimeTakenInSeconds,
                     isWinner,

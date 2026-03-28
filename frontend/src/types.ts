@@ -1,3 +1,5 @@
+export const TRIVIA_GAME_STATUS_FINISHED = 'Finished';
+
 export interface QuestionTopic {
     id: number;
     name: string;
@@ -41,6 +43,7 @@ export interface ActiveTriviaGame {
     wagerAmount: number;
     topicId: number;
     topicName: string;
+    status: string;
 }
 
 export interface ArenaLeaderboardResult{

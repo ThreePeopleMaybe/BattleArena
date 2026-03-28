@@ -12,8 +12,7 @@ public sealed class GetActiveTriviaGameQueryHandler(ITriviaGameQueryRepository t
 {
     public async Task<IReadOnlyList<ActiveTriviaGameData>> Handle(GetActiveTriviaGameQuery request, CancellationToken cancellationToken)
     {
-        var list = await triviaGameQueryRepository.GetActiveGamesAsync(request.GameTypeId, request.ArenaId, cancellationToken);
-        return mapper.Map<IReadOnlyList<ActiveTriviaGameData>>(list);
+        return await triviaGameQueryRepository.GetActiveGamesAsync(request.GameTypeId, request.ArenaId, cancellationToken);
     }
 }
 

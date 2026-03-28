@@ -42,7 +42,7 @@ export default function JoinArenaScreen({ navigation }: Props) {
 
     setLoading(true);
     try {
-      const id = await joinArena(trimmedCode, user.userId);
+      const id = await joinArena(trimmedCode, Number(user.userId));
       if (id) {
         navigation.replace('Challenge', { arenaId: id });
       } else {

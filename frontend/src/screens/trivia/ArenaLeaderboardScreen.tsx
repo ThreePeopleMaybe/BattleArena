@@ -3,13 +3,13 @@ import { useFocusEffect, type RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { getArenaLeaderboard } from '../../api/arena';
 import { useAuth } from '../../context/AuthContext';
@@ -123,7 +123,7 @@ export default function ArenaLeaderboardScreen({ route }: Props) {
                     {isYou ? ' (you)' : ''}
                   </Text>
                 </View>
-                <Text style={styles.colStat}>{entry.wins}</Text>
+                <Text style={styles.colStat}>{entry.wins}/{entry.losses}</Text>
                 <Text style={styles.colStat}>{entry.gamesPlayed}</Text>
                 <Text style={styles.colStatWide}>{entry.totalCorrectAnswers}</Text>
                 <Text style={styles.colStatWide}>{entry.totalTimeTakenInSeconds}</Text>

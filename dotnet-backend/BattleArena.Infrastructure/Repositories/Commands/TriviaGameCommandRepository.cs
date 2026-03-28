@@ -53,14 +53,13 @@ public class TriviaGameCommandRepository(BattleArenaDbContext dbContext) : ITriv
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<long> InsertTriviaGameResultAsync(long gameId, long userId, int topicId, int numberOfCorrectAnswers, int timeTakenInSeconds, bool? isWinner, CancellationToken cancellationToken = default)
+    public async Task<long> InsertTriviaGameResultAsync(long gameId, long userId, int numberOfCorrectAnswers, int timeTakenInSeconds, bool? isWinner, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
         var entity = new TriviaGameResult
         {
             GameId = gameId,
             UserId = userId,
-            QuestionTopicId = topicId,
             NumberOfCorrectAnswers = numberOfCorrectAnswers,
             TimeTakenInSeconds = timeTakenInSeconds,
             IsWinner = isWinner,
