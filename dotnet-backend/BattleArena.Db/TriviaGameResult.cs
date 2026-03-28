@@ -14,8 +14,6 @@ public class TriviaGameResult : AuditBase
 
     [Column("user_id")]
     public long UserId { get; set; }
-    [Column("question_topic_id")]
-    public int QuestionTopicId { get; set; }
     [Column("number_of_correct_answers")]
     public int NumberOfCorrectAnswers { get; set; }
 

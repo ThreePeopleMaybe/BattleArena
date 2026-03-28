@@ -11,12 +11,14 @@ export interface CreateTriviaGameResponse {
 export async function createTriviaGame(params: {
     gameTypeId: number;
     wagerAmount: number;
+    startedBy: number;
     topicId: number;
     arenaId?: number;
 }): Promise<CreateTriviaGameResponse> {
     const { data } = await battleArenaClient.post<CreateTriviaGameResponse>('/api/v1/trivia-games/create', {
         gameTypeId: params.gameTypeId,
         wagerAmount: params.wagerAmount,
+        startedBy: params.startedBy,
         topicId: params.topicId,
         arenaId: params.arenaId,
     });
@@ -30,7 +32,6 @@ export async function createTriviaGame(params: {
 export async function insertTriviaGameResult(payload: {
     gameId: number;
     userId: number;
-    topicId: number;
     numberOfCorrectAnswers: number;
     timeTakenInSeconds: number;
     details: QuizResult[];
@@ -38,7 +39,6 @@ export async function insertTriviaGameResult(payload: {
     const { data } = await battleArenaClient.post<number>('/api/v1/trivia-games/results', {
         gameId: payload.gameId,
         userId: payload.userId,
-        topicId: payload.topicId,
         numberOfCorrectAnswers: payload.numberOfCorrectAnswers,
         timeTakenInSeconds: payload.timeTakenInSeconds,
         details: payload.details,

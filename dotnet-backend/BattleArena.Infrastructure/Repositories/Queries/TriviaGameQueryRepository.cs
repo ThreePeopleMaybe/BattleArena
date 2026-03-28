@@ -10,24 +10,15 @@ public class TriviaGameQueryRepository(BattleArenaDbContext dbContext) : ITrivia
 {
     public async Task<IReadOnlyList<ActiveTriviaGameData>> GetActiveGamesAsync(int gameTypeId, int arenaId, CancellationToken cancellationToken = default)
     {
-        var games = await (
+        return await (
             from game in dbContext.Games.AsNoTracking()
             where game.GameTypeId == gameTypeId
-                  && game.Status != GameStatus.Finished
-            join result in dbContext.TriviaGameResults.AsNoTracking() on game.Id equals result.GameId
-            join topic in dbContext.QuestionTopics.AsNoTracking() on result.QuestionTopicId equals topic.Id
-            join user in dbContext.Users.AsNoTracking() on result.UserId equals user.Id
-            select new ActiveTriviaGameData(result.GameId, result.UserId, user.Username, game.Wager, topic.Id, topic.Name, game.ArenaId.GetValueOrDefault())
+                  && ((game.Status != GameStatus.Finished && arenaId == 0 && game.ArenaId == 0)
+                        || game.ArenaId == arenaId)
+            join topic in dbContext.QuestionTopics.AsNoTracking() on game.QuestionTopicId equals topic.Id
+            join user in dbContext.Users.AsNoTracking() on game.StartedBy equals user.Id
+            select new ActiveTriviaGameData(game.Id, game.StartedBy, user.Username, game.Wager, topic.Id, topic.Name, game.ArenaId.GetValueOrDefault(), game.Status.ToString())
         ).ToListAsync(cancellationToken);
-
-        if (arenaId > 0)
-        {
-            return games.Where(g => g.ArenaId == arenaId).ToList();
-        }
-        else
-        {
-            return games.Where(g => g.ArenaId == 0).ToList();
-        }
     }
 
     public async Task<IReadOnlyList<TriviaGameResult>> GetTriviaGameResultAsync(long gameId, CancellationToken cancellationToken = default)

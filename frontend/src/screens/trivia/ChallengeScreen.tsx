@@ -26,7 +26,7 @@ import { getWalletBalance } from '../../storage/walletStorage';
 import { globalStyles } from '../../styles/globalStyles';
 import { triviaTopicStyles } from '../../styles/triviaTopicStyles';
 import { theme } from '../../theme';
-import { ActiveTriviaGame, Arena, QuestionTopic } from '../../types';
+import { ActiveTriviaGame, Arena, QuestionTopic, TRIVIA_GAME_STATUS_FINISHED } from '../../types';
 
 const ALL_WAGERS = -1;
 const WAGER_OPTIONS: { value: number; label: string }[] = [
@@ -57,6 +57,11 @@ function entryMatchesTopic(entry: ActiveTriviaGame, topic: QuestionTopic): boole
 function pickRandomTopic(topics: QuestionTopic[]): QuestionTopic {
   return topics[Math.floor(Math.random() * topics.length)];
 }
+
+function isTriviaGameNotFinished(game: ActiveTriviaGame): boolean {
+  return game.status !== TRIVIA_GAME_STATUS_FINISHED;
+}
+
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Challenge'>;
@@ -168,7 +173,7 @@ export default function ChallengeScreen({ navigation, route }: Props) {
   }, [loadActiveTriviaGames, loadTopics, loadArenaDetail]);
 
   const filteredActiveTriviaGames = useMemo(() => {
-    let result = activeTriviaGames;
+    let result = activeTriviaGames.filter(e => isTriviaGameNotFinished(e));
     if (!isLoggedIn) {
       result = result.filter((e) => (e.wagerAmount ?? 0) === 0);
     }
@@ -252,6 +257,9 @@ export default function ChallengeScreen({ navigation, route }: Props) {
 
   const handleChallenge = useCallback(
     (entry: ActiveTriviaGame) => {
+      if(isLoggedIn && user?.userId != null && Number(entry.userId) === Number(user.userId)) {
+       return;
+      }
       const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : 0;
       navigation.navigate('Quiz', {
         topicId: Number(entry.topicId),
@@ -755,30 +763,51 @@ export default function ChallengeScreen({ navigation, route }: Props) {
         ) : null}
       </View>
     ) : (
-      filteredActiveTriviaGames.map((entry) => (
-        <View key={entry.gameId} style={[styles.entry]}>
-          <View style={styles.entryContent}>
-            <Text style={styles.playerText} numberOfLines={1}>
-              {entry.userName ?? 'Unknown'}
-            </Text>
-            <Text style={styles.topicName} numberOfLines={1}>
-              {entry.topicName}
-            </Text>
-            <Text style={styles.wagerText} numberOfLines={1}>
-              {entry.wagerAmount != null && entry.wagerAmount > 0
-                ? `$${entry.wagerAmount}`
-                : isLoggedIn ? 'No wager' : ''}
-            </Text>
+      filteredActiveTriviaGames.map((entry) => {
+        const isOwnGame =
+          isLoggedIn &&
+          user?.userId != null &&
+          Number(entry.userId) === Number(user.userId);
+        return (
+          <View key={entry.gameId} style={[styles.entry, isOwnGame && styles.entryOwn]}>
+            <View style={styles.entryContent}>
+              <Text style={styles.playerText} numberOfLines={1}>
+                {entry.userName ?? 'Unknown'}
+              </Text>
+              <Text style={styles.topicName} numberOfLines={1}>
+                {entry.topicName}
+              </Text>
+              <Text
+                style={[styles.wagerText, isOwnGame && styles.wagerTextOwn]}
+                numberOfLines={1}
+              >
+                {entry.wagerAmount != null && entry.wagerAmount > 0
+                  ? `$${entry.wagerAmount}`
+                  : isLoggedIn
+                  ? 'No wager'
+                  : ''}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.challengeButton, isOwnGame && styles.challengeButtonDisabled]}
+              onPress={() => handleChallenge(entry)}
+              activeOpacity={isOwnGame ? 1 : 0.8}
+              disabled={isOwnGame}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isOwnGame }}
+              accessibilityLabel={
+                isOwnGame ? 'Your quiz – cannot challenge yourself' : 'Challenge this player'
+              }
+            >
+              <MaterialCommunityIcons
+                name="sword-cross"
+                size={24}
+                color={isOwnGame ? theme.colors.textMuted : theme.colors.text}
+              />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.challengeButton}
-            onPress={() => handleChallenge(entry)}
-            activeOpacity={0.8}
-          >
-            <MaterialCommunityIcons name="sword-cross" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-        </View>
-      ))
+        );
+      })
     )}
   </ScrollView>
 );
@@ -909,6 +938,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     gap: theme.spacing.md,
   },
+  entryOwn:{
+    opacity: 0.5,
+    borderLeftColor: theme.colors.surfaceLight,  
+  },
   entryContent: {
     flex: 1,
     flexDirection: 'row',
@@ -934,12 +967,18 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     textAlign: 'right',
   },
+  wagerTextOwn: {
+    color: theme.colors.textMuted ,
+  },
   challengeButton: {
     backgroundColor: theme.colors.primary,
     padding: theme.spacing.sm,
     borderRadius: theme.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  challengeButtonDisabled: {
+    backgroundColor: theme.colors.surfaceLight,
   },
   filterButton: {
     flexDirection: 'row',

@@ -91,7 +91,6 @@ export default function QuizScreen({ navigation, route }: Props) {
       void insertTriviaGameResult({
         gameId,
         userId,
-        topicId,
         numberOfCorrectAnswers,
         timeTakenInSeconds,
         details,
@@ -122,6 +121,7 @@ export default function QuizScreen({ navigation, route }: Props) {
           const created = await createTriviaGame({
             gameTypeId: DEFAULT_TRIVIA_GAME_TYPE_ID,
             wagerAmount: Math.max(0, Math.floor(wagerAmount ?? 0)),
+            startedBy: user?.userId ?? 0,
             topicId: topicId,
             arenaId: arenaId,
           });
@@ -277,6 +277,7 @@ export default function QuizScreen({ navigation, route }: Props) {
           questionResults: finalResults,
           wagerAmount,
           fromChallenge,
+          arenaId
         });
         return;
       }
@@ -290,6 +291,8 @@ export default function QuizScreen({ navigation, route }: Props) {
         opponentName: name,
         questionResults: finalResults,
         wagerAmount,
+        fromChallenge,
+        arenaId
       });
       return;
     }
@@ -370,8 +373,9 @@ export default function QuizScreen({ navigation, route }: Props) {
       questionResults: fullResults,
       wagerAmount,
       fromChallenge,
+      arenaId
     });
-    return
+    return;
   }
 
   navigation.replace('BattleResult', {
@@ -384,6 +388,7 @@ export default function QuizScreen({ navigation, route }: Props) {
       questionResults: fullResults,
       wagerAmount,
       fromChallenge,
+      arenaId
     })
   }, [
     quizStartMs,

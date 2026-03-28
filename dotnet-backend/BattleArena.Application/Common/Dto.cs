@@ -34,7 +34,7 @@ public class Dto
 
     public sealed record QuestionTopicDto(int Id, string Name, int QuestionTopicCategoryId, string? Description);
 
-    public sealed record ActiveTriviaGameData(long GameId, long UserId, string UserName, int WagerAmount, int TopicId, string TopicName, int ArenaId);
+    public sealed record ActiveTriviaGameData(long GameId, long UserId, string UserName, int WagerAmount, int TopicId, string TopicName, int ArenaId, string Status);
 
     public sealed record ArenaLeaderboardEntryDto(string UserName, int Wins, int Losses, int GamesPlayed, int TotalCorrectAnswers, int TotalTimeTakenInSeconds);
 

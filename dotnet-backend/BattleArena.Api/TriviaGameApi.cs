@@ -32,7 +32,6 @@ public static class TriviaGameApi
             new InsertTriviaGameResultCommand(
                 request.GameId,
                 request.UserId,
-                request.TopicId,
                 request.NumberOfCorrectAnswers,
                 request.TimeTakenInSeconds,
                 request.Details),
@@ -44,7 +43,7 @@ public static class TriviaGameApi
     static async Task<IResult> CreateTriviaGame(CreateTriviaGameRequest request, ISender sender, CancellationToken cancellationToken)
     {
         var result = await sender.Send(
-            new CreateTriviaGameCommand(request.GameTypeId, request.WagerAmount, request.TopicId, request.ArenaId),
+            new CreateTriviaGameCommand(request.GameTypeId, request.WagerAmount, request.StartedBy, request.TopicId, request.ArenaId),
             cancellationToken);
 
         return Results.Created($"/api/v1/trivia-games/{result.GameId}", result);
@@ -65,9 +64,8 @@ public static class TriviaGameApi
 public sealed record CreateTriviaGameResultRequest(
     long GameId,
     long UserId,
-    int TopicId,
     int NumberOfCorrectAnswers,
     int TimeTakenInSeconds,
     IReadOnlyList<TriviaGameResultDetailDto> Details);
 
-public sealed record CreateTriviaGameRequest(int GameTypeId, int WagerAmount, int TopicId, int ArenaId);
+public sealed record CreateTriviaGameRequest(int GameTypeId, int WagerAmount, long StartedBy, int TopicId, int ArenaId);
