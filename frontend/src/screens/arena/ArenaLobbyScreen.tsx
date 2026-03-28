@@ -4,11 +4,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getArenaById, leaveArena } from '../../api/arena';
+import { useArenaRealtime } from '../../api/useRealtimeUpdate';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
 import { globalStyles } from '../../styles/globalStyles';
 import { theme } from '../../theme';
-import type { Arena, ArenaMember } from '../../types';
+import type { Arena, ArenaMember, ArenaMemberPayload } from '../../types';
 
 type LobbyPlayerRow = ArenaMember & { isHost: boolean };
 
@@ -28,6 +29,7 @@ function buildLobbyPlayers(arena: Arena, currentUserId?: number, currentUsername
       userId: id,
       userName: m.userName,
       isHost: id === ownerId,
+      arenaId: arena.id,
     });
   }
 
@@ -37,6 +39,7 @@ function buildLobbyPlayers(arena: Arena, currentUserId?: number, currentUsername
         ? currentUsername.trim()
         : 'Host';
     map.set(ownerId, {
+      arenaId: arena.id,
       userId: ownerId,
       userName: nameFromSelf,
       isHost: true,
@@ -69,6 +72,44 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
       setArena(null);
     }
   }, [arenaId]);
+
+  const applyLobbySignalRPayload = useCallback(
+  (member: ArenaMemberPayload) => {
+    const action = member.action.trim().toLowerCase();
+    
+    if (action !== 'join' && action !== 'leave') {
+      void loadArena();
+      return;
+    }
+
+    setArena((prev) => {
+      if (prev == null) return prev;
+      
+      if (Number.isFinite(member.arenaId) && member.arenaId > 0 && member.arenaId !== arenaId) {
+        return prev;
+      }
+
+      if (action === 'leave') {
+        return {
+          ...prev,
+          members: prev.members.filter((m) => Number(m.userId) !== Number(member.userId)),
+        };
+      }
+
+      const memberForList: ArenaMember = {
+        arenaId: member.arenaId,
+        userId: member.userId,
+        userName: member.userName.trim() || 'Player',
+      };
+
+      const without = prev.members.filter((m) => Number(m.userId) !== Number(member.userId));
+      return { ...prev, members: [...without, memberForList] };
+    });
+  },
+  [arenaId, loadArena]
+);
+
+  useArenaRealtime(arenaId, { onPayload: applyLobbySignalRPayload, refetch: loadArena });
 
   useFocusEffect(
     useCallback(() => {

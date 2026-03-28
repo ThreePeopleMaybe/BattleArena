@@ -14,25 +14,6 @@ export type RootStackParamList = {
     Login: undefined;
     SignUp: undefined;
     Profile: undefined;
-    Teams: undefined;
-    SelectOpponent: | {
-        battleAgainOpponentName?: string;
-        wagerAmount?: number;
-    } | undefined;
-    MatchingOpponent: {
-        opponentNames: string[];
-        wagerAmount?: number;
-        startInWaitingPhase?: boolean;
-    };
-    Topics: | {
-        mode?: 'battle';
-        yourTopicId?: number;
-        opponentName?: string;
-        wagerAmount?: number;
-        fromArena?: boolean;
-        arenaId?: number;
-        fromChallenge?: boolean;
-    } | undefined;
     Quiz: {
         topicId: number;
         opponentTopicId?: number;
@@ -43,22 +24,10 @@ export type RootStackParamList = {
         fromChallenge?: boolean;
         gameId?: number;
     };
-    Battle: {
-        topicId: number;
-        opponentTopicId?: number;
-        opponentName: string;
-        wagerAmount: number;
-        arenaId?: number;
-        fromChallenge?: boolean;
-        gameId?: number;
-    };
-    BattleResult: {
+    QuizResult: {
         topicId: number;
         userCorrect: number;
         userTimeMs: number;
-        opponentCorrect: number;
-        opponentTimeMs: number;
-        opponentName: string;
         questionResults?: QuizQuestionResult[];
         wagerAmount?: number;
         fromChallenge?: boolean;
@@ -71,23 +40,5 @@ export type RootStackParamList = {
         userCorrect: number;
         userTimeMs: number;
         questionCount?: number;
-    };
-    WaitingForPlayers: | {
-        mode: 'arena';
-        arenaId: number;
-        topicId?: number;
-        userCorrect: number;
-        userTimeMs: number;
-        questionCount?: number;
-    } | {
-        mode: 'battle';
-        topicId: number;
-        userCorrect: number;
-        userTimeMs: number;
-        opponentCorrect: number;
-        opponentTimeMs: number;
-        opponentName: string;
-        questionResults?: QuizQuestionResult[];
-        wagerAmount?: number;
     };
 };

@@ -241,54 +241,12 @@ export default function QuizScreen({ navigation, route }: Props) {
       const timeMs = Date.now() - quizStartMs;
       const finalResults = [...questionResults, resultEntry];
       const userCorrect = countCorrectAnswers(finalResults);
-      const total = questions.length;
-
-      let opponentCorrect = 0;
-      let opponentTimeMs = 0;
-      let name = '';
-
       persistQuizResult(finalResults, timeMs);
 
-      if (battleMode && opponentName) {
-        if (opponentName === 'Arena' && arenaId) {
-          navigation.replace('WaitingForPlayers', {
-            mode: 'arena',
-            arenaId,
-            topicId,
-            userCorrect,
-            userTimeMs: timeMs,
-            questionCount: total,
-          });
-          return;
-        }
-
-        const opp = generateOpponentScore(userCorrect, total);
-        opponentCorrect = opp.correct;
-        opponentTimeMs = opp.timeMs;
-        name = opponentName;
-
-        navigation.replace('BattleResult', {
-          topicId,
-          userCorrect,
-          userTimeMs: timeMs,
-          opponentCorrect,
-          opponentTimeMs,
-          opponentName: name,
-          questionResults: finalResults,
-          wagerAmount,
-          fromChallenge,
-          arenaId
-        });
-        return;
-      }
-
-      navigation.replace('BattleResult', {
+      navigation.replace('QuizResult', {
         topicId,
         userCorrect,
         userTimeMs: timeMs,
-        opponentCorrect,
-        opponentTimeMs,
-        opponentName: name,
         questionResults: finalResults,
         wagerAmount,
         fromChallenge,
@@ -338,53 +296,12 @@ export default function QuizScreen({ navigation, route }: Props) {
 
     const fullResults = [...questionResults, ...unansweredResults];
     const userCorrect = countCorrectAnswers(fullResults);
-
-    let opponentCorrect = 0;
-    let opponentTimeMs = 0;
-    let name = '';
-
     persistQuizResult(fullResults, timeMs);
 
-    if (battleMode && opponentName) {
-      if (opponentName === 'Arena' && arenaId) {
-        navigation.replace('WaitingForPlayers', {
-          mode: 'arena',
-          arenaId,
-          topicId,
-          userCorrect,
-          userTimeMs: timeMs,
-          questionCount: questions.length,
-        });
-        return;
-    }
-    
-     const opp = generateOpponentScore(userCorrect, questions.length);
-    opponentCorrect = opp.correct;
-    opponentTimeMs = opp.timeMs;
-    name = opponentName;
-
-    navigation.replace('BattleResult', {
+  navigation.replace('QuizResult', {
       topicId,
       userCorrect,
       userTimeMs: timeMs,
-      opponentCorrect,
-      opponentTimeMs,
-      opponentName: name,
-      questionResults: fullResults,
-      wagerAmount,
-      fromChallenge,
-      arenaId
-    });
-    return;
-  }
-
-  navigation.replace('BattleResult', {
-      topicId,
-      userCorrect,
-      userTimeMs: timeMs,
-      opponentCorrect,
-      opponentTimeMs,
-      opponentName: name,
       questionResults: fullResults,
       wagerAmount,
       fromChallenge,

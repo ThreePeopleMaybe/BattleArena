@@ -31,12 +31,12 @@ public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameComman
         return entity.Id;
     }
 
-    public async Task<bool> FinishGameAsync(long gameId, CancellationToken cancellationToken = default)
+    public async Task<(bool Success, int? ArenaId)> FinishGameAsync(long gameId, CancellationToken cancellationToken = default)
     {
         var entity = await dbContext.Games.FindAsync([gameId], cancellationToken);
         if (entity is null)
         {
-            return false;
+            return (false, null);
         }
 
         entity.Status = GameStatus.Finished;
@@ -45,6 +45,6 @@ public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameComman
         entity.UpdatedAt = DateTimeOffset.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return true;
+        return (true, entity.ArenaId);
     }
 }

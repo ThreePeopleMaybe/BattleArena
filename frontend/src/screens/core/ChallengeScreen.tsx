@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useGameRealtime } from '../../../src/api/useRealtimeUpdate';
 import { getArenaById, leaveArena } from '../../api/arena';
 import { DEFAULT_TRIVIA_GAME_TYPE_ID, getActiveTriviaGame } from '../../api/triviaGame';
 import { useAuth } from '../../context/AuthContext';
@@ -26,7 +27,7 @@ import { getWalletBalance } from '../../storage/walletStorage';
 import { globalStyles } from '../../styles/globalStyles';
 import { triviaTopicStyles } from '../../styles/triviaTopicStyles';
 import { theme } from '../../theme';
-import { ActiveTriviaGame, Arena, QuestionTopic, TRIVIA_GAME_STATUS_FINISHED } from '../../types';
+import { ActiveTriviaGame, Arena, GameRealtimePayload, QuestionTopic, TRIVIA_GAME_STATUS_FINISHED } from '../../types';
 
 const ALL_WAGERS = -1;
 const WAGER_OPTIONS: { value: number; label: string }[] = [
@@ -130,8 +131,48 @@ export default function ChallengeScreen({ navigation, route }: Props) {
     } finally {
       setActiveTriviaGamesLoading(false);
     }
-  }, [user?.userId, user?.username]);
+  }, [user?.userId, user?.username, arenaId]);
 
+const applyTriviaSignalRPayload = useCallback(
+  (game: GameRealtimePayload) => {
+    const statusNorm = game.status.trim().toLowerCase();
+    const isNew = statusNorm === 'new';
+    const isFinished = 
+      statusNorm === TRIVIA_GAME_STATUS_FINISHED.toLowerCase() || statusNorm === 'finished';
+
+    if (isFinished) {
+      setActiveTriviaGames((prev) => prev.filter((g) => g.gameId !== game.gameId));
+      setActiveTriviaGamesError(null);
+      return;
+    }
+
+    if (isNew) {
+      const newGame: ActiveTriviaGame = {
+        gameId: game.gameId,
+        userId: game.userId,
+        userName: game.userName,
+        wagerAmount: game.wagerAmount,
+        topicId: 0,
+        topicName: game.topicName,
+        status: game.status,
+      }
+      setActiveTriviaGames((prev) => {
+        const without = prev.filter((g) => g.gameId !== game.gameId);
+        return [...without, newGame];
+      });
+      setActiveTriviaGamesError(null);
+      return;
+    }
+    setActiveTriviaGamesError(null);
+  },
+  [loadActiveTriviaGames]
+);
+
+  useGameRealtime(arenaId > 0 ? arenaId : undefined, {
+    onPayload: applyTriviaSignalRPayload,
+    refetch: loadActiveTriviaGames,
+  });
+  
   useEffect(() => {
     if (topicsLoading) return;
     if (selectedTopicId === ALL_TOPICS) return;

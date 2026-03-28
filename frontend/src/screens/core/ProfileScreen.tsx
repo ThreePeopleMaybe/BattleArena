@@ -13,11 +13,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { RootStackParamList } from '../navigation/types';
-import { addToWallet, getWalletBalance } from '../storage/walletStorage';
-import { globalStyles } from '../styles/globalStyles';
-import { theme } from '../theme';
+import { useAuth } from '../../context/AuthContext';
+import { RootStackParamList } from '../../navigation/types';
+import { addToWallet, getWalletBalance } from '../../storage/walletStorage';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
