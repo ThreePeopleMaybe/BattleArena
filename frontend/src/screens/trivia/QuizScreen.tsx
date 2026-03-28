@@ -58,9 +58,6 @@ function buildTriviaResultDetails(
 export default function QuizScreen({ navigation, route }: Props) {
   const {
     topicId,
-    opponentTopicId,
-    battleMode,
-    opponentName,
     wagerAmount,
     arenaId,
     fromChallenge,
@@ -68,8 +65,6 @@ export default function QuizScreen({ navigation, route }: Props) {
   } = route.params;
 
   const { user } = useAuth();
-
-  const needsBattleIntro = Boolean(battleMode || fromChallenge);
 
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -100,7 +95,7 @@ export default function QuizScreen({ navigation, route }: Props) {
   );
 
   const [introCountdown, setIntroCountdown] = useState(() =>
-    battleMode || fromChallenge ? BATTLE_INTRO_COUNTDOWN_SEC : 0
+    fromChallenge ? BATTLE_INTRO_COUNTDOWN_SEC : 0
   );
 
   const [quizStartMs, setQuizStartMs] = useState<number | null>(null);
@@ -155,7 +150,7 @@ export default function QuizScreen({ navigation, route }: Props) {
       }
     })();
 
-    if (needsBattleIntro) {
+    if (fromChallenge) {
       setIntroCountdown(BATTLE_INTRO_COUNTDOWN_SEC);
       introInterval = setInterval(() => {
         setIntroCountdown((c) => {
@@ -179,15 +174,15 @@ export default function QuizScreen({ navigation, route }: Props) {
         clearInterval(introInterval);
       }
     };
-  }, [topicId, opponentTopicId, wagerAmount, gameId, battleMode, fromChallenge, arenaId]);
+  }, [topicId, wagerAmount, gameId, fromChallenge, arenaId]);
 
   useEffect(() => {
     const ready = questions != null && questions.length > 0;
-    const introDone = !needsBattleIntro || introCountdown === 0;
+    const introDone = !fromChallenge || introCountdown === 0;
     if (ready && introDone && quizStartMs === null) {
       setQuizStartMs(Date.now());
     }
-  }, [questions, needsBattleIntro, introCountdown, quizStartMs]);
+  }, [questions, fromChallenge, introCountdown, quizStartMs]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -206,11 +201,11 @@ export default function QuizScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     const ready = questions != null && questions.length > 0;
-    const introDone = !needsBattleIntro || introCountdown === 0;
+    const introDone = !fromChallenge || introCountdown === 0;
     if (ready && introDone && quizStartMs === null) {
       setQuizStartMs(Date.now());
     }
-  }, [questions, needsBattleIntro, introCountdown, quizStartMs]);
+  }, [questions, fromChallenge, introCountdown, quizStartMs]);
 
   useEffect(() => {
     if (quizStartMs == null) return;
@@ -271,8 +266,6 @@ export default function QuizScreen({ navigation, route }: Props) {
     arenaId,
     fromChallenge,
     persistQuizResult,
-    battleMode,
-    opponentName,
     questions,
   ]);
 
@@ -313,8 +306,6 @@ export default function QuizScreen({ navigation, route }: Props) {
     currentIndex,
     questionResults,
     questions,
-    battleMode,
-    opponentName,
     navigation,
     topicId,
     wagerAmount,
@@ -338,7 +329,7 @@ export default function QuizScreen({ navigation, route }: Props) {
     );
   }
 
-  if (needsBattleIntro && introCountdown > 0) {
+  if (fromChallenge && introCountdown > 0) {
     return (
       <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding, styles.introWrap]}>
         <Text style={styles.introLabel}>Starting in</Text>

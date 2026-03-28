@@ -16,9 +16,6 @@ export type RootStackParamList = {
     Profile: undefined;
     Quiz: {
         topicId: number;
-        opponentTopicId?: number;
-        battleMode?: boolean;
-        opponentName?: string;
         wagerAmount?: number;
         arenaId?: number;
         fromChallenge?: boolean;
