@@ -90,6 +90,7 @@ export default function ChallengeScreen({ navigation, route }: Props) {
   const [arenaDetail, setArenaDetail] = useState<Arena | null>(null);
   const [arenaDetailLoading, setArenaDetailLoading] = useState(() => arenaId > 0);
   const [battleLimitModalVisible, setBattleLimitModalVisible] = useState(false);
+  const [challengeRequirementModalVisible, setChallengeRequirementModalVisible] = useState(false);
   const [leaveArenaModalVisible, setLeaveArenaModalVisible] = useState(false);
   const [leaveArenaBusy, setLeaveArenaBusy] = useState(false);
   const [leaveArenaError, setLeaveArenaError] = useState<string | null>(null);
@@ -255,11 +256,31 @@ export default function ChallengeScreen({ navigation, route }: Props) {
     return wagerAmount === 0 ? 'None' : `$${wagerAmount}`;
   }, [wagerAmount]);
 
+   const myActiveArenaTriviaGameCount = useMemo(() => {
+    if (arenaId <= 0) return 0;
+    const uid = user?.userId;
+    if (uid == null) return 0;
+    const ids = new Set<number>();
+    for (const entry of activeTriviaGames) {
+      if (entry.userId === uid) ids.add(entry.gameId);
+    }
+    return ids.size;
+  }, [arenaId, user?.userId, activeTriviaGames]);
+
   const handleChallenge = useCallback(
     (entry: ActiveTriviaGame) => {
       if(isLoggedIn && user?.userId != null && Number(entry.userId) === Number(user.userId)) {
        return;
       }
+
+      if(arenaId > 0 
+        && isLoggedIn
+        && user?.userId != null
+        && myActiveArenaTriviaGameCount < MAX_ACTIVE_ARENA_TRIVIA_GAMES_PER_USER) {
+          setChallengeRequirementModalVisible(true);
+          return;
+      }
+
       const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : 0;
       navigation.navigate('Quiz', {
         topicId: Number(entry.topicId),
@@ -271,7 +292,7 @@ export default function ChallengeScreen({ navigation, route }: Props) {
         arenaId: arenaId,
       });
     },
-    [isLoggedIn, effectiveWager, navigation]
+    [arenaId, isLoggedIn, effectiveWager, navigation, myActiveArenaTriviaGameCount, user?.userId]
   );
 
   const canStartNewBattle = useMemo(() => {
@@ -281,17 +302,6 @@ export default function ChallengeScreen({ navigation, route }: Props) {
     }
     return apiTopics.length > 0;
   }, [selectedTopicId, apiTopics, topicsLoading]);
-
-  const myActiveArenaTriviaGameCount = useMemo(() => {
-    if (arenaId <= 0) return 0;
-    const uid = user?.userId;
-    if (uid == null) return 0;
-    const ids = new Set<number>();
-    for (const entry of activeTriviaGames) {
-      if (entry.userId === uid) ids.add(entry.gameId);
-    }
-    return ids.size;
-  }, [arenaId, user?.userId, activeTriviaGames]);
 
   const handleStartNewBattle = useCallback(() => {
     if (!canStartNewBattle) return;
@@ -673,6 +683,30 @@ export default function ChallengeScreen({ navigation, route }: Props) {
           <TouchableOpacity
             style={globalStyles.primaryButton}
             onPress={() => setBattleLimitModalVisible(false)}
+            activeOpacity={0.8}
+          >
+            <Text style={globalStyles.primaryButtonText}>OK</Text>
+          </TouchableOpacity>
+        </Pressable>
+      </Pressable>
+    </Modal>
+
+    <Modal
+      visible={challengeRequirementModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setChallengeRequirementModalVisible(false)}
+    >
+      <Pressable style={globalStyles.modalOverlay} onPress={() => setChallengeRequirementModalVisible(false)}>
+        <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+          <Text style={globalStyles.modalTitle}>Complete your battles first</Text>
+          <Text style={styles.battleLimitModalBody}>
+            Finish {MAX_ACTIVE_ARENA_TRIVIA_GAMES_PER_USER} battles you started in this tournament before challenging 
+            other players. You have completed {myActiveArenaTriviaGameCount} of {MAX_ACTIVE_ARENA_TRIVIA_GAMES_PER_USER}.
+          </Text>
+          <TouchableOpacity
+            style={globalStyles.primaryButton}
+            onPress={() => setChallengeRequirementModalVisible(false)}
             activeOpacity={0.8}
           >
             <Text style={globalStyles.primaryButtonText}>OK</Text>
