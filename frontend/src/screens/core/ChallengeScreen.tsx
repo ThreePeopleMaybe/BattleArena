@@ -15,11 +15,11 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { useGameRealtime } from '../../../src/api/useRealtimeUpdate';
 import { getArenaById, leaveArena } from '../../api/arena';
 import { DEFAULT_TRIVIA_GAME_TYPE_ID, getActiveTriviaGame } from '../../api/triviaGame';
 import { useAuth } from '../../context/AuthContext';
 import { useQuestionTopics } from '../../hooks/useQuestionTopics';
+import { useGameRealtime } from '../../hooks/useRealtimeUpdate';
 import { RootStackParamList } from '../../navigation/types';
 import { getFavouriteTopicIds, toggleFavouriteTopic } from '../../storage/favouritesStorage';
 import { getSavedWager, saveWager } from '../../storage/wagerStorage';
@@ -325,8 +325,6 @@ const applyTriviaSignalRPayload = useCallback(
       const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : 0;
       navigation.navigate('Quiz', {
         topicId: Number(entry.topicId),
-        opponentTopicId: Number(entry.topicId),
-        opponentName: entry.userName ?? 'Opponent',
         wagerAmount: wager,
         fromChallenge: true,
         gameId: entry.gameId,
@@ -369,7 +367,6 @@ const applyTriviaSignalRPayload = useCallback(
     const wager = isLoggedIn && effectiveWager > 0 ? effectiveWager : 0;
     navigation.navigate('Quiz', {
       topicId,
-      opponentTopicId,
       wagerAmount: wager,
       fromChallenge: true,
       arenaId: arenaId,

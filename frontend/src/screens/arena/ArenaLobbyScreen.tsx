@@ -4,8 +4,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getArenaById, leaveArena } from '../../api/arena';
-import { useArenaRealtime } from '../../api/useRealtimeUpdate';
 import { useAuth } from '../../context/AuthContext';
+import { useArenaRealtime } from '../../hooks/useRealtimeUpdate';
 import { RootStackParamList } from '../../navigation/types';
 import { globalStyles } from '../../styles/globalStyles';
 import { theme } from '../../theme';
@@ -114,8 +114,6 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       loadArena();
-      const interval = setInterval(loadArena, 3000);
-      return () => clearInterval(interval);
     }, [loadArena])
   );
 
