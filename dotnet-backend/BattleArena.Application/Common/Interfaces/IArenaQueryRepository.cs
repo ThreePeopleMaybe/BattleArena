@@ -5,7 +5,7 @@ namespace BattleArena.Application.Common.Interfaces;
 
 public interface IArenaQueryRepository
 {
-    Task<IReadOnlyList<Arena>> GetArenasByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Arena>> GetArenasByUserIdAsync(long userId, int gameTypeId, CancellationToken cancellationToken = default);
 
     Task<Arena?> GetArenaByIdAsync(int arenaId, CancellationToken cancellationToken = default);
 

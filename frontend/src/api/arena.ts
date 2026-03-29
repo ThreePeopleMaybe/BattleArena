@@ -15,11 +15,12 @@ export async function getArenaById(arenaId: number): Promise<Arena | null> {
   }
 }
 
-export async function createArena(arenaName: string, arenaOwner: number, wager: number): Promise<Arena> {
+export async function createArena(arenaName: string, arenaOwner: number, wager: number, gameTypeId: number): Promise<Arena> {
     const { data } = await battleArenaClient.post<Arena>('/api/v1/arenas', {
       arenaName,
       arenaOwner,
       wager: Math.max(0, Math.floor(wager)),
+      gameTypeId,
     });
     return {
       ...data,
@@ -31,8 +32,8 @@ export async function deleteArena(arenaId: number): Promise<void> {
     await battleArenaClient.delete(`/api/v1/arenas/${arenaId}`);
 }
 
-export async function getArenasByUser(userId: number): Promise<Arena[]> {
-    const { data } = await battleArenaClient.get<Arena[]>(`/api/v1/arenas/user/${userId}`);
+export async function getArenasByUser(userId: number, gameTypeId: number): Promise<Arena[]> {
+    const { data } = await battleArenaClient.get<Arena[]>(`/api/v1/arenas/user/${userId}?gameTypeId=${gameTypeId}`);
     if (!Array.isArray(data)) return [];
     return data.map((a) => ({
       ...a,

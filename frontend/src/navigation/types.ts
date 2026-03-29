@@ -1,16 +1,20 @@
 import type { QuizQuestionResult } from '../types';
 
 export type RootStackParamList = {
-    Home: undefined;
-    Challenge: 
+    GameSelection: undefined;
+    Home: { gameTypeId: number };
+    Archery: undefined;
+    Bowling: undefined;
+    Challenge:
         | {
             arenaId?: number;
+            gameTypeId: number;
         }
         | undefined;
-    ArenaHome: undefined;
-    JoinArena: undefined;
-    ArenaLobby: { arenaId: number; isHost?: boolean };
-    ArenaLeaderboard: { arenaId: number };
+    ArenaHome: { gameTypeId: number };
+    JoinArena: { gameTypeId: number };
+    ArenaLobby: { arenaId: number; gameTypeId: number; isHost?: boolean };
+    ArenaLeaderboard: { arenaId: number; gameTypeId: number };
     Login: undefined;
     SignUp: undefined;
     Profile: undefined;
@@ -30,12 +34,5 @@ export type RootStackParamList = {
         fromChallenge?: boolean;
         arenaId?: number;
         isChallenger?: boolean;
-    };
-    ArenaResult: {
-        arenaId: number;
-        topicId: number;
-        userCorrect: number;
-        userTimeMs: number;
-        questionCount?: number;
     };
 };

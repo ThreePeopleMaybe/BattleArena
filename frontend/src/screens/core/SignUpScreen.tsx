@@ -27,7 +27,7 @@ export default function SignUpScreen({ navigation }: Props) {
   const onSignedUp = useCallback(
     async (created: UserDto, { email, password }: SignUpCredentials) => {
       await login(email, password, { userId: created.id, username: created.username });
-      navigation.navigate('Home');
+      navigation.navigate('GameSelection');
     },
     [login, navigation]
   );

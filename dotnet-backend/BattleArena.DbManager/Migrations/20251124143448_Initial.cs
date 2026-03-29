@@ -23,8 +23,9 @@ namespace BattleArena.DbManager.Migrations
                     updated_by = table.Column<string>(type: "varchar(255)", nullable: false),
                     arena_name = table.Column<string>(type: "text", nullable: false),
                     arena_code = table.Column<string>(type: "text", nullable: false),
-                    arena_owner = table.Column<int>(type: "integer", nullable: false),
+                    arena_owner = table.Column<long>(type: "bigint", nullable: false),
                     wager_amount = table.Column<int>(type: "integer", nullable: false),
+                    game_type_id = table.Column<int>(type: "integer", nullable: false),
                     status = table.Column<string>(type: "varchar(32)", nullable: false)
                 },
                 constraints: table => { table.PrimaryKey("PK_arenas", x => x.id); });

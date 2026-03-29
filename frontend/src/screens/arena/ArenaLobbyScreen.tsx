@@ -59,7 +59,7 @@ function buildLobbyPlayers(arena: Arena, currentUserId?: number, currentUsername
 }
 
 export default function ArenaLobbyScreen({ navigation, route }: Props) {
-  const { arenaId, isHost: isHostParam } = route.params;
+  const { arenaId, gameTypeId, isHost: isHostParam } = route.params;
   const { isLoggedIn, user } = useAuth();
 
   const [arena, setArena] = useState<Arena | null>(null);
@@ -143,7 +143,7 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          navigation.navigate('ArenaHome');
+          navigation.navigate('ArenaHome', { gameTypeId });
         },
       },
     ]);
@@ -168,7 +168,7 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
                 /* still navigate */
               }
             }
-            navigation.navigate('ArenaHome');
+            navigation.navigate('ArenaHome', { gameTypeId });
           },
         },
       ]
@@ -224,7 +224,7 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
 
         <TouchableOpacity
           style={[globalStyles.secondaryButton, styles.arenaChallengesButton]}
-          onPress={() => navigation.navigate('Challenge', { arenaId: arena.id })}
+          onPress={() => navigation.navigate('Challenge', { arenaId: arena.id, gameTypeId })}
           activeOpacity={0.8}
         >
           <Text style={globalStyles.secondaryButtonText}>Arena challenges</Text>
@@ -232,7 +232,7 @@ export default function ArenaLobbyScreen({ navigation, route }: Props) {
 
         <TouchableOpacity
           style={[globalStyles.secondaryButton, styles.arenaLeaderboardButton]}
-          onPress={() => navigation.navigate('ArenaLeaderboard', { arenaId: arena.id })}
+          onPress={() => navigation.navigate('ArenaLeaderboard', { arenaId: arena.id, gameTypeId })}
           activeOpacity={0.8}
         >
           <Ionicons name="trophy-outline" size={20} color={theme.colors.primary} />

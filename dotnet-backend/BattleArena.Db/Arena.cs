@@ -17,10 +17,13 @@ public class Arena : AuditBase
     public string ArenaCode { get; set; } = string.Empty;
 
     [Column("arena_owner")]
-    public int ArenaOwner { get; set; }
+    public long ArenaOwner { get; set; }
 
     [Column("wager_amount")]
     public int WagerAmount { get; set; }
+
+	[Column("game_typeId")]
+	public int GameTypeId { get; set;}
 
     [Column("status")]
     public ArenaStatus Status { get; set; } = ArenaStatus.New;

@@ -1,21 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
+import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { RootStackParamList } from '../navigation/types';
-import { globalStyles } from '../styles/globalStyles';
-import { theme } from '../theme';
+import { getHomeGameMeta } from '../../constants/gameTypes';
+import { useAuth } from '../../context/AuthContext';
+import { RootStackParamList } from '../../navigation/types';
+import { globalStyles } from '../../styles/globalStyles';
+import { theme } from '../../theme';
 
-type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> };
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Home'>;
+  route: RouteProp<RootStackParamList, 'Home'>;
+};
 
-export default function HomeScreen({ navigation }: Props) {
+export default function HomeScreen({ navigation, route }: Props) {
+  const gameTypeId = route.params?.gameTypeId ?? 0;
   const { isLoggedIn } = useAuth();
+  const { title: screenTitle } = getHomeGameMeta(gameTypeId);
 
   return (
     <View style={[globalStyles.screenContainer, globalStyles.screenContainerPadding]}>
       <View style={styles.headerRow}>
-        <Text style={globalStyles.screenTitle}></Text>
+        <Text style={globalStyles.screenTitle}>{screenTitle}</Text>
         {isLoggedIn ? (
           <TouchableOpacity
             style={styles.profileButton}
@@ -40,7 +47,7 @@ export default function HomeScreen({ navigation }: Props) {
 
       <TouchableOpacity
         style={[styles.card, styles.challengeCard]}
-        onPress={() => navigation.navigate('Challenge')}
+        onPress={() => navigation.navigate('Challenge', { gameTypeId: gameTypeId }  )}
         activeOpacity={0.8}
       >
         <Text style={styles.cardIcon}>🏆</Text>
@@ -50,7 +57,7 @@ export default function HomeScreen({ navigation }: Props) {
 
       <TouchableOpacity
         style={[styles.card, styles.arenaCard]}
-        onPress={() => navigation.navigate('ArenaHome')}
+        onPress={() => navigation.navigate('ArenaHome', { gameTypeId: gameTypeId })}
         activeOpacity={0.8}
       >
         <Text style={styles.cardIcon}>🏟️</Text>
@@ -102,9 +109,6 @@ const styles = StyleSheet.create({
   },
   challengeCard: {
     borderColor: theme.colors.accent,
-  },
-  teamCard: {
-    borderColor: theme.colors.surfaceLight,
   },
   cardIcon: {
     fontSize: 40,

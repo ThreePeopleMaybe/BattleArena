@@ -6,7 +6,7 @@ using static BattleArena.Application.Common.Dto;
 
 namespace BattleArena.Application.Arenas.Commands;
 
-public sealed record CreateArenaCommand(string ArenaName, int ArenaOwner, int Wager) : IRequest<ArenaDto>;
+public sealed record CreateArenaCommand(string ArenaName, long ArenaOwner, int Wager, int GameTypeId) : IRequest<ArenaDto>;
 
 public sealed class CreateArenaCommandHandler(IArenaCommandRepository arenaCommandRepository, IMapper mapper, BattleArenaDbContext dbContext)
     : IRequestHandler<CreateArenaCommand, ArenaDto>
@@ -25,6 +25,7 @@ public sealed class CreateArenaCommandHandler(IArenaCommandRepository arenaComma
                     arenaCode,
                     request.ArenaOwner,
                     request.Wager,
+                    request.GameTypeId,
                     cancellationToken);
 
                 await arenaCommandRepository.InsertArenaPlayerAsync(arena.Id, request.ArenaOwner, cancellationToken);

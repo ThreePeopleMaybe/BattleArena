@@ -11,7 +11,7 @@ type Props = {
 };
 
 export default function LoginScreen({ navigation }: Props) {
-  const onLoggedIn = useCallback(() => navigation.navigate('Home'), [navigation]);
+  const onLoggedIn = useCallback(() => navigation.navigate('GameSelection'), [navigation]);
   const { email, setEmail, password, setPassword, error, submit } = useLoginForm(onLoggedIn);
 
   return (

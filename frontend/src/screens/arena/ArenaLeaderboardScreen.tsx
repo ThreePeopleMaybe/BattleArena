@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { GAME_TYPE_TRIVIA } from '../../../src/constants/gameTypes';
 import { getArenaLeaderboard } from '../../api/arena';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
@@ -24,7 +25,7 @@ type Props = {
 };
 
 export default function ArenaLeaderboardScreen({ route }: Props) {
-  const { arenaId } = route.params;
+  const { arenaId, gameTypeId } = route.params;
   const { user } = useAuth();
   const [rows, setRows] = useState<ArenaLeaderboardResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +73,9 @@ export default function ArenaLeaderboardScreen({ route }: Props) {
       }
     >
       <Text style={styles.subtitle}>
-        Ranked by wins, then total correct answers, then by speed.
+        { gameTypeId === GAME_TYPE_TRIVIA 
+        ? 'Ranked by wins, then total correct answers, then by speed.' 
+        : 'Ranked by wins, then by speed.' }
       </Text>
 
       {loading && !refreshing ? (
@@ -103,7 +106,9 @@ export default function ArenaLeaderboardScreen({ route }: Props) {
             <Text style={styles.colHeaderPlayer}>Player</Text>
             <Text style={styles.colStat}>W/L</Text>
             <Text style={styles.colStat}>Games</Text>
-            <Text style={styles.colStatWide}>Correct Answers</Text>
+            {gameTypeId === GAME_TYPE_TRIVIA 
+              ? <Text style={styles.colStatWide}>Correct Answers</Text>
+              : null}
             <Text style={styles.colStatWide}>Time Taken</Text>
           </View>
           {rows.map((entry, index) => {
@@ -125,7 +130,9 @@ export default function ArenaLeaderboardScreen({ route }: Props) {
                 </View>
                 <Text style={styles.colStat}>{entry.wins}/{entry.losses}</Text>
                 <Text style={styles.colStat}>{entry.gamesPlayed}</Text>
-                <Text style={styles.colStatWide}>{entry.totalCorrectAnswers}</Text>
+                {gameTypeId === GAME_TYPE_TRIVIA 
+                  ? <Text style={styles.colStatWide}>{entry.totalCorrectAnswers}</Text>
+                  : null}
                 <Text style={styles.colStatWide}>{entry.totalTimeTakenInSeconds}</Text>
               </View>
             );
