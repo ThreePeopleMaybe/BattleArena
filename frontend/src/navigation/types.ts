@@ -3,8 +3,8 @@ import type { QuizQuestionResult } from '../types';
 export type RootStackParamList = {
     GameSelection: undefined;
     Home: { gameTypeId: number };
-    Archery: undefined;
-    Bowling: undefined;
+    Archery: { arenaId?: number; gameTypeId: number };
+    Sudoku: { arenaId?: number; gameTypeId: number };
     Challenge:
         | {
             arenaId?: number;

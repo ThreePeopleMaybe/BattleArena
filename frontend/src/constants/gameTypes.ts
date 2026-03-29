@@ -1,8 +1,8 @@
 export const GAME_TYPE_TRIVIA = 1;
-export const GAME_TYPE_BOWLING = 2;
+export const GAME_TYPE_SUDOKU = 2;
 export const GAME_TYPE_ARCHERY = 3;
 
-export type ChallengePlayScreen = 'Archery' | 'Bowling';
+export type ChallengePlayScreen = 'Archery' | 'Sudoku';
 
 export type GameTypeRegistryEntry = {
   id: number;
@@ -16,9 +16,9 @@ export const GAME_TYPE_REGISTRY: readonly GameTypeRegistryEntry[] = [
     title: 'Trivia',
   },
   {
-    id: GAME_TYPE_BOWLING,
-    title: 'Bowling',
-    challengePlayScreen: 'Bowling',
+    id: GAME_TYPE_SUDOKU,
+    title: 'Sudoku',
+    challengePlayScreen: 'Sudoku',
   },
   {
     id: GAME_TYPE_ARCHERY,

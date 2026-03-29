@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BattleArena.Application.TriviaGames.Commands;
 
-public sealed record InsertTriviaGameResultCommand(
+public sealed record InsertGameResultCommand(
     long GameId,
     long UserId,
     int NumberOfCorrectAnswers,
@@ -14,13 +14,14 @@ public sealed record InsertTriviaGameResultCommand(
     IReadOnlyList<Dto.TriviaGameResultDetailDto> Details) : IRequest<long>;
 
 public sealed class InsertTriviaGameResultCommandHandler(
+    IGameCommandRepository gameCommandRepository,
     ITriviaGameCommandRepository triviaGameCommandRepository,
     ITriviaGameQueryRepository triviaGameQueryRepository,
     IRealtimeNotifier realtimeNotifier,
     BattleArenaDbContext dbContext)
-    : IRequestHandler<InsertTriviaGameResultCommand, long>
+    : IRequestHandler<InsertGameResultCommand, long>
 {
-    public async Task<long> Handle(InsertTriviaGameResultCommand request, CancellationToken cancellationToken)
+    public async Task<long> Handle(InsertGameResultCommand request, CancellationToken cancellationToken)
     {
         var triviaGameResults =
             await triviaGameQueryRepository.GetTriviaGameResultAsync(request.GameId, cancellationToken) ?? [];
@@ -59,10 +60,10 @@ public sealed class InsertTriviaGameResultCommandHandler(
 
                 if (hasExistingResults)
                 {
-                    await triviaGameCommandRepository.UpdateTriviaGameResultWinnerAsync(triviaGameResults, ct);
+                    await gameCommandRepository.UpdateGameResultWinnerAsync(triviaGameResults, ct);
                 }
 
-                var id = await triviaGameCommandRepository.InsertTriviaGameResultAsync(
+                var id = await gameCommandRepository.InsertGameResultAsync(
                     request.GameId,
                     request.UserId,
                     request.NumberOfCorrectAnswers,
@@ -70,7 +71,7 @@ public sealed class InsertTriviaGameResultCommandHandler(
                     isWinner,
                     ct);
 
-                if (request.Details.Count > 0)
+                if (request.Details != null && request.Details.Count > 0)
                 {
                     var now = DateTimeOffset.UtcNow;
                     var details = request.Details.Select(d => new TriviaGameResultDetail

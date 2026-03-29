@@ -13,13 +13,13 @@ import ArenaHomeScreen from './src/screens/arena/ArenaHomeScreen';
 import ArenaLeaderboardScreen from './src/screens/arena/ArenaLeaderboardScreen';
 import ArenaLobbyScreen from './src/screens/arena/ArenaLobbyScreen';
 import JoinArenaScreen from './src/screens/arena/JoinArenaScreen';
-import BowlingGameScreen from './src/screens/bowling/BowlingGameScreen';
 import ChallengeScreen from './src/screens/core/ChallengeScreen';
 import HomeScreen from './src/screens/core/HomeScreen';
 import LoginScreen from './src/screens/core/LoginScreen';
 import ProfileScreen from './src/screens/core/ProfileScreen';
 import SignUpScreen from './src/screens/core/SignUpScreen';
 import GameSelectionScreen from './src/screens/GameSelectionScreen';
+import SudokuGameScreen from './src/screens/sudoku/SudokuGameScreen';
 import QuizResultScreen from './src/screens/trivia/QuizResultScreen';
 import QuizScreen from './src/screens/trivia/QuizScreen';
 import { theme } from './src/theme';
@@ -102,7 +102,7 @@ export default function App() {
               })}
             />
             <Stack.Screen name="Archery" component={ArcheryGameScreen} options={{ title: 'Archery' }} />
-            <Stack.Screen name="Bowling" component={BowlingGameScreen} options={{ title: 'Bowling' }} />
+            <Stack.Screen name="Sudoku" component={SudokuGameScreen} options={{ title: 'Sudoku' }} />
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Log in', ...noBackButton }} />
             <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: 'Sign up', ...noBackButton }} />
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />

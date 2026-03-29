@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace BattleArena.Db;
 
 [Table("trivia_game_results")]
-public class TriviaGameResult : AuditBase
+public class GameResult : AuditBase
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("id", Order = 0)]
