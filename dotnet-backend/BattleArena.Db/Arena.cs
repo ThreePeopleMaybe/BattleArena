@@ -22,7 +22,7 @@ public class Arena : AuditBase
     [Column("wager_amount")]
     public int WagerAmount { get; set; }
 
-	[Column("game_typeId")]
+	[Column("game_type_id")]
 	public int GameTypeId { get; set;}
 
     [Column("status")]

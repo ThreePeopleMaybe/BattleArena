@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { GAME_TYPE_TRIVIA } from '../../../src/constants/gameTypes';
+import { GAME_TYPE_TRIVIA, getChallengePlayScreen } from '../../../src/constants/gameTypes';
 import { getArenaById, leaveArena } from '../../api/arena';
 import { getActiveTriviaGame } from '../../api/triviaGame';
 import { useAuth } from '../../context/AuthContext';
@@ -338,13 +338,13 @@ const applyTriviaSignalRPayload = useCallback(
   );
 
   const canStartNewBattle = useMemo(() => {
-    if(gameTypeId !== GAME_TYPE_TRIVIA) return true;
+    if (gameTypeId !== GAME_TYPE_TRIVIA) return true;
     if (topicsLoading) return false;
     if (selectedTopicId !== ALL_TOPICS) {
       return apiTopics.some((t) => String(t.id) === selectedTopicId);
     }
     return apiTopics.length > 0;
-  }, [selectedTopicId, apiTopics, topicsLoading]);
+  }, [gameTypeId, selectedTopicId, apiTopics, topicsLoading]);
 
   const handleStartNewBattle = useCallback(() => {
     if (!canStartNewBattle) return;
@@ -356,6 +356,13 @@ const applyTriviaSignalRPayload = useCallback(
       setBattleLimitModalVisible(true);
       return;
     }
+
+    const screen = getChallengePlayScreen(gameTypeId);
+    if(screen) {
+      navigation.navigate(screen);
+      return;
+    }
+
     let topicId: number;
     let opponentTopicId: number;
 
@@ -385,7 +392,8 @@ const applyTriviaSignalRPayload = useCallback(
     selectedTopicId,
     apiTopics,
     user?.userId,
-    showTopicFilter
+    showTopicFilter,
+    gameTypeId
   ]);
 
   const openWagerModal = useCallback(() => {
