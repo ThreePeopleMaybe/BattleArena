@@ -28,7 +28,6 @@ type Props = {
   route: RouteProp<RootStackParamList, 'ArenaHome'>;
 };
 
-// references
 export default function ArenaHomeScreen({ navigation, route }: Props) {
   const gameTypeId = route.params?.gameTypeId ?? 0;
   const { user, isLoggedIn } = useAuth();

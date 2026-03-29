@@ -33,7 +33,7 @@ export async function deleteArena(arenaId: number): Promise<void> {
 }
 
 export async function getArenasByUser(userId: number, gameTypeId: number): Promise<Arena[]> {
-    const { data } = await battleArenaClient.get<Arena[]>(`/api/v1/arenas/user/${userId}?gameTypeId=${gameTypeId}`);
+    const { data } = await battleArenaClient.get<Arena[]>(`/api/v1/arenas/user/${userId}/gameType/${gameTypeId}`);
     if (!Array.isArray(data)) return [];
     return data.map((a) => ({
       ...a,
