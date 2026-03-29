@@ -2,10 +2,10 @@ import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { GAME_TYPE_TRIVIA } from '../../../src/constants/gameTypes';
 import { finishGame } from '../../api/game';
 import {
   createTriviaGame,
-  DEFAULT_TRIVIA_GAME_TYPE_ID,
   getTriviaGameQuestionsByGameId,
   insertTriviaGameResult,
 } from '../../api/triviaGame';
@@ -114,7 +114,7 @@ export default function QuizScreen({ navigation, route }: Props) {
       try {
         if (gameId === null || gameId === undefined) {
           const created = await createTriviaGame({
-            gameTypeId: DEFAULT_TRIVIA_GAME_TYPE_ID,
+            gameTypeId: GAME_TYPE_TRIVIA,
             wagerAmount: Math.max(0, Math.floor(wagerAmount ?? 0)),
             startedBy: user?.userId ?? 0,
             topicId: topicId,

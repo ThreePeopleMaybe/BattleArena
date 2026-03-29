@@ -7,7 +7,7 @@ namespace BattleArena.Infrastructure.Repositories.Commands;
 
 public class ArenaCommandRepository(BattleArenaDbContext dbContext) : IArenaCommandRepository
 {
-    public async Task<Arena> CreateArenaAsync(string arenaName, string arenaCode, int arenaOwner, int wagerAmount, CancellationToken cancellationToken = default)
+    public async Task<Arena> CreateArenaAsync(string arenaName, string arenaCode, long arenaOwner, int wagerAmount, int gameTypeId, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
 
@@ -17,6 +17,7 @@ public class ArenaCommandRepository(BattleArenaDbContext dbContext) : IArenaComm
             ArenaCode = arenaCode,
             ArenaOwner = arenaOwner,
             WagerAmount = wagerAmount,
+            GameTypeId = gameTypeId,
             Status = ArenaStatus.New,
             CreatedBy = "system",
             CreatedAt = now,

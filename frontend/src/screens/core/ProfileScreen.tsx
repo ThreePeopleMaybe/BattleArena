@@ -361,7 +361,7 @@ export default function ProfileScreen({ navigation }: Props) {
         {isLoggedIn ? (
           <TouchableOpacity
             style={[globalStyles.primaryButton, styles.compactButton, styles.primaryButtonMargin]}
-            onPress={() => logout().then(() => navigation.navigate('Home'))}
+            onPress={() => logout().then(() => navigation.navigate('GameSelection'))}
             activeOpacity={0.8}
           >
             <Text style={[globalStyles.primaryButtonText, styles.compactButtonText]}>Log out</Text>

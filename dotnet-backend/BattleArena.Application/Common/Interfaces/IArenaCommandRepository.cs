@@ -4,7 +4,7 @@ namespace BattleArena.Application.Common.Interfaces;
 
 public interface IArenaCommandRepository
 {
-    Task<Arena> CreateArenaAsync(string arenaName, string arenaCode, int arenaOwner, int wagerAmount, CancellationToken cancellationToken = default);
+    Task<Arena> CreateArenaAsync(string arenaName, string arenaCode, long arenaOwner, int wagerAmount, int gameTypeId, CancellationToken cancellationToken = default);
 
     Task<bool> ArenaCodeExistsAsync(string arenaCode, CancellationToken cancellationToken = default);
 

@@ -35,7 +35,7 @@ public static class ArenaApi
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status404NotFound);
 
-        group.MapGet("user/{userId:int}", GetArenasByUserId)
+        group.MapGet("user/{userId:long}/gametype/{gameTypeId:int}", GetArenasByUserId)
             .Produces<IReadOnlyList<ArenaDto>>();
 
         return group;
@@ -43,7 +43,7 @@ public static class ArenaApi
 
     static async Task<IResult> CreateArena(CreateArenaRequest request, ISender sender, CancellationToken cancellationToken)
     {
-        var arena = await sender.Send(new CreateArenaCommand(request.ArenaName, request.ArenaOwner, request.Wager), cancellationToken);
+        var arena = await sender.Send(new CreateArenaCommand(request.ArenaName, request.ArenaOwner, request.Wager, request.GameTypeId), cancellationToken);
         return Results.Ok(arena);
     }
 
@@ -57,9 +57,9 @@ public static class ArenaApi
         await sender.Send(new DeleteArenaCommand(arenaId), cancellationToken);
     }
 
-    static async Task<IResult> GetArenasByUserId(int userId, ISender sender, CancellationToken cancellationToken)
+    static async Task<IResult> GetArenasByUserId(long userId, int gameTypeId, ISender sender, CancellationToken cancellationToken)
     {
-        var arenas = await sender.Send(new GetArenasByUserIdQuery(userId), cancellationToken);
+        var arenas = await sender.Send(new GetArenasByUserIdQuery(userId, gameTypeId), cancellationToken);
         return Results.Ok(arenas);
     }
 
@@ -86,7 +86,6 @@ public static class ArenaApi
     }
 }
 
-public sealed record CreateArenaRequest(string ArenaName, int ArenaOwner, int Wager);
+public sealed record CreateArenaRequest(string ArenaName, long ArenaOwner, int Wager, int GameTypeId);
 public sealed record JoinArenaRequest(string ArenaCode, int UserId);
-
 public sealed record UpdateArenaWagerRequest(int WagerAmount);

@@ -8,10 +8,11 @@ namespace BattleArena.Infrastructure.Repositories.Queries;
 
 public class ArenaQueryRepository(BattleArenaDbContext dbContext) : IArenaQueryRepository
 {
-    public async Task<IReadOnlyList<Arena>> GetArenasByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Arena>> GetArenasByUserIdAsync(long userId, int gameTypeId, CancellationToken cancellationToken = default)
     {
         return await dbContext.Arenas.AsNoTracking()
             .Where(a => a.Status != ArenaStatus.Deleted &&
+                        a.GameTypeId == gameTypeId &&
                 (a.ArenaOwner == userId ||
                  dbContext.ArenaPlayers.Any(ap => ap.ArenaId == a.Id &&
                     ap.UserId == userId &&

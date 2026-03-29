@@ -1,8 +1,6 @@
 import type { ActiveTriviaGame, Question, QuizResult } from '../types';
 import { battleArenaClient } from './battleArenaClient';
 
-export const DEFAULT_TRIVIA_GAME_TYPE_ID = 1;
-
 export interface CreateTriviaGameResponse {
     gameId: number;
     questions: Question[];

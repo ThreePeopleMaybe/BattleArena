@@ -15,8 +15,9 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { GAME_TYPE_TRIVIA } from '../../../src/constants/gameTypes';
 import { getArenaById, leaveArena } from '../../api/arena';
-import { DEFAULT_TRIVIA_GAME_TYPE_ID, getActiveTriviaGame } from '../../api/triviaGame';
+import { getActiveTriviaGame } from '../../api/triviaGame';
 import { useAuth } from '../../context/AuthContext';
 import { useQuestionTopics } from '../../hooks/useQuestionTopics';
 import { useGameRealtime } from '../../hooks/useRealtimeUpdate';
@@ -71,8 +72,10 @@ type Props = {
 
 export default function ChallengeScreen({ navigation, route }: Props) {
   const arenaId = route.params?.arenaId ?? 0;
+  const gameTypeId = route.params?.gameTypeId ?? 0;
   const showWagerControls = arenaId <= 0;
-
+  const showTopicFilter = gameTypeId === GAME_TYPE_TRIVIA;
+  
   const { isLoggedIn, user } = useAuth();
   const [activeTriviaGames, setActiveTriviaGames] = useState<ActiveTriviaGame[]>([]);
   const [activeTriviaGamesLoading, setActiveTriviaGamesLoading] = useState(false);
@@ -123,7 +126,7 @@ export default function ChallengeScreen({ navigation, route }: Props) {
     setActiveTriviaGamesLoading(true);
     setActiveTriviaGamesError(null);
     try {
-      const rows = await getActiveTriviaGame(DEFAULT_TRIVIA_GAME_TYPE_ID, arenaId);
+      const rows = await getActiveTriviaGame(gameTypeId, arenaId);
       setActiveTriviaGames(rows);
     } catch {
       setActiveTriviaGames([]);
@@ -219,7 +222,7 @@ const applyTriviaSignalRPayload = useCallback(
     if (!isLoggedIn) {
       result = result.filter((e) => (e.wagerAmount ?? 0) === 0);
     }
-    if (selectedTopicId !== ALL_TOPICS) {
+    if (showTopicFilter && selectedTopicId !== ALL_TOPICS) {
       const topic = apiTopics.find((t) => String(t.id) === selectedTopicId);
       if (topic) {
         result = result.filter((e) => entryMatchesTopic(e, topic));
@@ -229,7 +232,7 @@ const applyTriviaSignalRPayload = useCallback(
       result = result.filter((e) => (e.wagerAmount ?? 0) === wagerAmount);
     }
     return result;
-  }, [activeTriviaGames, selectedTopicId, wagerAmount, isLoggedIn, apiTopics, showWagerControls]);
+  }, [activeTriviaGames, selectedTopicId, wagerAmount, isLoggedIn, apiTopics, showWagerControls, showTopicFilter]);
 
   const topicOptions: TopicOption[] = useMemo(() => {
     const all: TopicOption = { id: ALL_TOPICS, name: 'Any topics' };
@@ -335,6 +338,7 @@ const applyTriviaSignalRPayload = useCallback(
   );
 
   const canStartNewBattle = useMemo(() => {
+    if(gameTypeId !== GAME_TYPE_TRIVIA) return true;
     if (topicsLoading) return false;
     if (selectedTopicId !== ALL_TOPICS) {
       return apiTopics.some((t) => String(t.id) === selectedTopicId);
@@ -355,7 +359,7 @@ const applyTriviaSignalRPayload = useCallback(
     let topicId: number;
     let opponentTopicId: number;
 
-    if (selectedTopicId !== ALL_TOPICS) {
+    if (showTopicFilter && selectedTopicId !== ALL_TOPICS) {
       topicId = Number(selectedTopicId);
       opponentTopicId = topicId;
     } else {
@@ -381,6 +385,7 @@ const applyTriviaSignalRPayload = useCallback(
     selectedTopicId,
     apiTopics,
     user?.userId,
+    showTopicFilter
   ]);
 
   const openWagerModal = useCallback(() => {
@@ -412,7 +417,7 @@ const applyTriviaSignalRPayload = useCallback(
     try {
       await leaveArena(arenaId, uid);
       setLeaveArenaModalVisible(false);
-      navigation.replace('ArenaHome');
+      navigation.replace('ArenaHome', { gameTypeId });
     } catch (e) {
       setLeaveArenaError(e instanceof Error ? e.message : 'Request failed.');
     } finally {
@@ -468,7 +473,7 @@ const applyTriviaSignalRPayload = useCallback(
         <View style={[styles.arenaHeaderRight, styles.wagerSpacerTrailingRow]}>
           <TouchableOpacity
             style={[styles.arenaLeaderboardIconChip, styles.arenaLeaderboardIconOnly]}
-            onPress={() => navigation.navigate('ArenaLeaderboard', { arenaId })}
+            onPress={() => navigation.navigate('ArenaLeaderboard', { arenaId, gameTypeId })}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Arena leaderboard"
@@ -533,25 +538,26 @@ const applyTriviaSignalRPayload = useCallback(
         </View>
       </View>
     )}
-
-    <TouchableOpacity
-      style={styles.filterButton}
-      onPress={() => setTopicFilterModalVisible(true)}
-      activeOpacity={0.8}
-    >
-      <Ionicons name="filter" size={20} color={theme.colors.primary} />
-      <Text style={styles.filterButtonText}>
-        {topicsLoading ? 'Loading topics...' : selectedTopicLabel}
-      </Text>
-      {topicsLoading ? (
-        <ActivityIndicator size="small" color={theme.colors.primary} />
-      ) : (
-        <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
-      )}
-    </TouchableOpacity>
+    {showTopicFilter ? (
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={() => setTopicFilterModalVisible(true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="filter" size={20} color={theme.colors.primary} />
+        <Text style={styles.filterButtonText}>
+          {topicsLoading ? 'Loading topics...' : selectedTopicLabel}
+        </Text>
+        {topicsLoading ? (
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        ) : (
+          <Ionicons name="chevron-down" size={20} color={theme.colors.textMuted} />
+        )}
+      </TouchableOpacity>
+    ) : null}
 
     <Modal
-      visible={topicFilterModalVisible}
+      visible={showTopicFilter && topicFilterModalVisible}
       transparent
       animationType="fade"
       onRequestClose={() => setTopicFilterModalVisible(false)}
@@ -819,6 +825,8 @@ const applyTriviaSignalRPayload = useCallback(
           <Text style={globalStyles.emptyState}>
             {!isLoggedIn
               ? 'Log in to see quiz history from your account.'
+              : gameTypeId !== GAME_TYPE_TRIVIA
+              ? 'No active games yet. Start a battle to see it here.'
               : activeTriviaGames.length === 0
               ? 'No quiz results yet. Finish a quiz while logged in to see it here.'
               : 'No quizzes match the selected filters. Try different topic or wager.'}

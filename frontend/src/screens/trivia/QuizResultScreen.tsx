@@ -2,6 +2,7 @@ import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { GAME_TYPE_TRIVIA } from '../../../src/constants/gameTypes';
 import { RootStackParamList } from '../../navigation/types';
 import { addToWallet } from '../../storage/walletStorage';
 import { globalStyles } from '../../styles/globalStyles';
@@ -20,7 +21,8 @@ function formatTime(ms: number): string {
 }
 
 export default function QuizResultScreen({ navigation, route }: Props) {
-  const { userCorrect, userTimeMs, questionResults, wagerAmount, fromChallenge, arenaId: resultArenaId } = route.params;
+  const { userCorrect, userTimeMs, questionResults, wagerAmount } = route.params;
+  const arenaId = route.params.arenaId ?? 0;
   const walletApplied = useRef(false);
 
   let winner: 'you' | 'opponent' | 'tie' = 'you';
@@ -72,9 +74,7 @@ export default function QuizResultScreen({ navigation, route }: Props) {
       <TouchableOpacity
         style={globalStyles.primaryButton}
         onPress={() => {
-            navigation.navigate('Challenge',
-              typeof resultArenaId === 'number' && resultArenaId > 0 ? { arenaId: resultArenaId } : undefined
-            );
+            navigation.navigate('Challenge',  { arenaId: arenaId, gameTypeId: GAME_TYPE_TRIVIA });
         }}
         activeOpacity={0.8}>
         <Text style={globalStyles.primaryButtonText}>Battle again</Text>
@@ -82,7 +82,7 @@ export default function QuizResultScreen({ navigation, route }: Props) {
 
         <TouchableOpacity
           style={globalStyles.secondaryButton}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate('Home', { gameTypeId:GAME_TYPE_TRIVIA })}
           activeOpacity={0.8}
         >
           <Text style={globalStyles.secondaryButtonText}>Home</Text>

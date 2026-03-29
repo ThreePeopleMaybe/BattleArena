@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -25,22 +25,12 @@ const WAGER_PRESETS = [0, 1, 5, 10, 25] as const;
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ArenaHome'>;
+  route: RouteProp<RootStackParamList, 'ArenaHome'>;
 };
 
-function formatDate(ms: number): string {
-  const d = new Date(ms);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  if (isToday) return `Today ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return `Yesterday ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-
-  return d.toLocaleDateString();
-}
-
-export default function ArenaHomeScreen({ navigation }: Props) {
+// references
+export default function ArenaHomeScreen({ navigation, route }: Props) {
+  const gameTypeId = route.params?.gameTypeId ?? 0;
   const { user, isLoggedIn } = useAuth();
   const [arenas, setArenas] = useState<Arena[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +48,7 @@ export default function ArenaHomeScreen({ navigation }: Props) {
       setLoading(false);
       return;
     }
-    const list = await getArenasByUser(user.userId);
+    const list = await getArenasByUser(user.userId, gameTypeId);
     setArenas(list);
   }, [isLoggedIn, user?.userId]);
 
@@ -105,7 +95,7 @@ export default function ArenaHomeScreen({ navigation }: Props) {
     setArenaNameError('');
     setCreatingArena(true);
     try {
-      const dto = await createArena(trimmed, user.userId, arenaWager);
+      const dto = await createArena(trimmed, user.userId, arenaWager, gameTypeId);
       const created: Arena = {
         ...dto,
         members: Array.isArray(dto.members) ? dto.members : [],
@@ -127,7 +117,7 @@ export default function ArenaHomeScreen({ navigation }: Props) {
       navigation.navigate('Login');
       return;
     }
-    navigation.navigate('JoinArena');
+    navigation.navigate('JoinArena', { gameTypeId });
   };
 
   const isHost = (arena: Arena) => {
@@ -186,6 +176,7 @@ export default function ArenaHomeScreen({ navigation }: Props) {
             onPress={() =>
               navigation.navigate('ArenaLobby', {
                 arenaId: arena.id,
+                gameTypeId: gameTypeId,
                 isHost: isHost(arena),
               })
             }
