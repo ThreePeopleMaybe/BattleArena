@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { GAME_TYPE_ARCHERY, GAME_TYPE_BOWLING, GAME_TYPE_TRIVIA } from '../constants/gameTypes';
+import { GAME_TYPE_ARCHERY, GAME_TYPE_SUDOKU, GAME_TYPE_TRIVIA } from '../constants/gameTypes';
 import { useAuth } from '../context/AuthContext';
 import { RootStackParamList } from '../navigation/types';
 import { globalStyles } from '../styles/globalStyles';
@@ -59,15 +59,17 @@ export default function GameSelectionScreen({ navigation }: Props) {
         <Text style={styles.cardDesc}>Challenges, quizzes, and tournaments.</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.card, styles.bowlingCard]}
-        onPress={() => navigation.navigate('Home', { gameTypeId: GAME_TYPE_BOWLING })}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.cardIcon}>🎳</Text>
-        <Text style={styles.cardTitle}>Bowling</Text>
-        <Text style={styles.cardDesc}>Ten frames – time your release when the marker hits the sweet spot.</Text>
-      </TouchableOpacity>
+     <TouchableOpacity
+    style={[styles.card, styles.sudokuCard]}
+    onPress={() => navigation.navigate('Home', { gameTypeId: GAME_TYPE_SUDOKU })}
+    activeOpacity={0.8}
+    >
+    <Text style={styles.cardIcon}>🔢</Text>
+    <Text style={styles.cardTitle}>Sudoku</Text>
+    <Text style={styles.cardDesc}>
+        Classic 9x9 logic puzzles. Fill the grid with no repeats per row, column, or box.
+    </Text>
+    </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.card, styles.archeryCard]}
@@ -124,8 +126,8 @@ const styles = StyleSheet.create({
   triviaCard: {
     borderColor: theme.colors.accent,
   },
-  bowlingCard: {
-    borderColor: theme.colors.success,
+  sudokuCard: {
+    borderColor: theme.colors.primaryLight,
   },
   archeryCard: {
     borderColor: theme.colors.primary,

@@ -19,7 +19,7 @@ public class BattleArenaDbContext(DbContextOptions<BattleArenaDbContext> options
     public DbSet<Wager> Wagers { get; set; }
     public DbSet<TriviaGameQuestion> TriviaGameQuestions { get; set; }
     public DbSet<TriviaGameChoice> TriviaGameChoices { get; set; }
-    public DbSet<TriviaGameResult> TriviaGameResults { get; set; }
+    public DbSet<GameResult> TriviaGameResults { get; set; }
     public DbSet<TriviaGameResultDetail> TriviaGameResultDetails { get; set; }
     public DbSet<GameType> GameTypes { get; set; }
 

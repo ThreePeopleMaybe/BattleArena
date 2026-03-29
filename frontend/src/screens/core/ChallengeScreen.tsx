@@ -359,7 +359,7 @@ const applyTriviaSignalRPayload = useCallback(
 
     const screen = getChallengePlayScreen(gameTypeId);
     if(screen) {
-      navigation.navigate(screen);
+      navigation.navigate(screen, { arenaId, gameTypeId });
       return;
     }
 

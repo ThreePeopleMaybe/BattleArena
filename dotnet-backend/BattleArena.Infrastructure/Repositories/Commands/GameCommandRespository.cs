@@ -47,4 +47,44 @@ public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameComman
         await dbContext.SaveChangesAsync(cancellationToken);
         return (true, entity.ArenaId);
     }
+
+    public async Task<long> InsertGameResultAsync(long gameId, long userId, int numberOfCorrectAnswers, int timeTakenInSeconds, bool? isWinner, CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var entity = new GameResult
+        {
+            GameId = gameId,
+            UserId = userId,
+            NumberOfCorrectAnswers = numberOfCorrectAnswers,
+            TimeTakenInSeconds = timeTakenInSeconds,
+            IsWinner = isWinner,
+            CreatedBy = "system",
+            CreatedAt = now,
+            UpdatedBy = "system",
+            UpdatedAt = now
+        };
+
+        dbContext.TriviaGameResults.Add(entity);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return entity.Id;
+    }
+
+    public async Task UpdateGameResultWinnerAsync(IReadOnlyList<GameResult> triviaGameResults, CancellationToken cancellationToken = default)
+    {
+        if (triviaGameResults.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var triviaGameResult in triviaGameResults)
+        {
+            triviaGameResult.UpdatedBy = "system";
+            triviaGameResult.UpdatedAt = now;
+        }
+
+        dbContext.TriviaGameResults.UpdateRange(triviaGameResults);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

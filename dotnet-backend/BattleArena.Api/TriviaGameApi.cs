@@ -14,9 +14,6 @@ public static class TriviaGameApi
         group.MapPost("create", CreateTriviaGame)
             .Produces<CreateTriviaGameResult>(StatusCodes.Status201Created);
 
-        group.MapPost("results", InsertTriviaGameResult)
-            .Produces<long>(StatusCodes.Status201Created);
-
         group.MapGet("active/{gameTypeId:int}/{arenaId:int}", GetActiveTriviaGame)
             .Produces<List<ActiveTriviaGameData>>();
 
@@ -25,19 +22,6 @@ public static class TriviaGameApi
             .Produces(StatusCodes.Status404NotFound);
 
         return group;
-    }
-    static async Task<IResult> InsertTriviaGameResult(CreateTriviaGameResultRequest request, ISender sender, CancellationToken cancellationToken)
-    {
-        var id = await sender.Send(
-            new InsertTriviaGameResultCommand(
-                request.GameId,
-                request.UserId,
-                request.NumberOfCorrectAnswers,
-                request.TimeTakenInSeconds,
-                request.Details),
-            cancellationToken);
-
-        return Results.Created($"/api/v1/trivia-games/results/{id}", id);
     }
 
     static async Task<IResult> CreateTriviaGame(CreateTriviaGameRequest request, ISender sender, CancellationToken cancellationToken)
@@ -60,12 +44,5 @@ public static class TriviaGameApi
         return triviaGame is null ? Results.NotFound() : Results.Ok(triviaGame);
     }
 }
-
-public sealed record CreateTriviaGameResultRequest(
-    long GameId,
-    long UserId,
-    int NumberOfCorrectAnswers,
-    int TimeTakenInSeconds,
-    IReadOnlyList<TriviaGameResultDetailDto> Details);
 
 public sealed record CreateTriviaGameRequest(int GameTypeId, int WagerAmount, long StartedBy, int TopicId, int ArenaId);

@@ -81,7 +81,7 @@ namespace BattleArena.DbManager.Migrations
                 constraints: table => { table.PrimaryKey("PK_trivia_game_choices", x => x.id); });
 
             migrationBuilder.CreateTable(
-                name: "trivia_game_results",
+                name: "game_results",
                 columns: table => new
                 {
                     id = table.Column<long>(type: "bigint", nullable: false)

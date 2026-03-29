@@ -52,7 +52,7 @@ export default function HomeScreen({ navigation, route }: Props) {
       >
         <Text style={styles.cardIcon}>🏆</Text>
         <Text style={styles.cardTitle}>Challenge</Text>
-        <Text style={styles.cardDesc}>View past quizzes and challenge opponents by category.</Text>
+        <Text style={styles.cardDesc}>Challenge your friends or stranger to a game.</Text>
       </TouchableOpacity>
 
       <TouchableOpacity

@@ -21,7 +21,7 @@ public class TriviaGameQueryRepository(BattleArenaDbContext dbContext) : ITrivia
         ).ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<TriviaGameResult>> GetTriviaGameResultAsync(long gameId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<GameResult>> GetTriviaGameResultAsync(long gameId, CancellationToken cancellationToken = default)
     {
         return await dbContext.TriviaGameResults
             .AsNoTracking()
