@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { GAME_TYPE_TRIVIA, getChallengePlayScreen } from '../../../src/constants/gameTypes';
 import { getArenaById, leaveArena } from '../../api/arena';
-import { getActiveTriviaGame } from '../../api/triviaGame';
+import { getActiveGame } from '../../api/game';
 import { useAuth } from '../../context/AuthContext';
 import { useQuestionTopics } from '../../hooks/useQuestionTopics';
 import { useGameRealtime } from '../../hooks/useRealtimeUpdate';
@@ -28,7 +28,7 @@ import { getWalletBalance } from '../../storage/walletStorage';
 import { globalStyles } from '../../styles/globalStyles';
 import { triviaTopicStyles } from '../../styles/triviaTopicStyles';
 import { theme } from '../../theme';
-import { ActiveTriviaGame, Arena, GameRealtimePayload, QuestionTopic, TRIVIA_GAME_STATUS_FINISHED } from '../../types';
+import { ActiveGame, Arena, GameRealtimePayload, QuestionTopic, TRIVIA_GAME_STATUS_FINISHED } from '../../types';
 
 const ALL_WAGERS = -1;
 const WAGER_OPTIONS: { value: number; label: string }[] = [
@@ -49,7 +49,7 @@ interface TopicOption {
   name: string;
 }
 
-function entryMatchesTopic(entry: ActiveTriviaGame, topic: QuestionTopic): boolean {
+function entryMatchesTopic(entry: ActiveGame, topic: QuestionTopic): boolean {
   if (entry.topicId === topic.id) return true;
   const a = entry.topicName.trim().toLowerCase();
   const b = topic.name.trim().toLowerCase();
@@ -60,7 +60,7 @@ function pickRandomTopic(topics: QuestionTopic[]): QuestionTopic {
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
-function isTriviaGameNotFinished(game: ActiveTriviaGame): boolean {
+function isTriviaGameNotFinished(game: ActiveGame): boolean {
   return game.status !== TRIVIA_GAME_STATUS_FINISHED;
 }
 
@@ -77,9 +77,9 @@ export default function ChallengeScreen({ navigation, route }: Props) {
   const showTopicFilter = gameTypeId === GAME_TYPE_TRIVIA;
   
   const { isLoggedIn, user } = useAuth();
-  const [activeTriviaGames, setActiveTriviaGames] = useState<ActiveTriviaGame[]>([]);
-  const [activeTriviaGamesLoading, setActiveTriviaGamesLoading] = useState(false);
-  const [activeTriviaGamesError, setActiveTriviaGamesError] = useState<string | null>(null);
+  const [ActiveGames, setActiveGames] = useState<ActiveGame[]>([]);
+  const [ActiveGamesLoading, setActiveGamesLoading] = useState(false);
+  const [ActiveGamesError, setActiveGamesError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string>(ALL_TOPICS);
   const [topicFilterModalVisible, setTopicFilterModalVisible] = useState(false);
@@ -116,23 +116,23 @@ export default function ChallengeScreen({ navigation, route }: Props) {
     }
   }, [arenaId]);
 
-  const loadActiveTriviaGames = useCallback(async () => {
+  const loadActiveGames = useCallback(async () => {
     const userId = user?.userId;
     if (userId == null) {
-      setActiveTriviaGames([]);
-      setActiveTriviaGamesError(null);
+      setActiveGames([]);
+      setActiveGamesError(null);
       return;
     }
-    setActiveTriviaGamesLoading(true);
-    setActiveTriviaGamesError(null);
+    setActiveGamesLoading(true);
+    setActiveGamesError(null);
     try {
-      const rows = await getActiveTriviaGame(gameTypeId, arenaId);
-      setActiveTriviaGames(rows);
+      const rows = await getActiveGame(gameTypeId, arenaId);
+      setActiveGames(rows);
     } catch {
-      setActiveTriviaGames([]);
-      setActiveTriviaGamesError('Could not load active trivia games.');
+      setActiveGames([]);
+      setActiveGamesError('Could not load active trivia games.');
     } finally {
-      setActiveTriviaGamesLoading(false);
+      setActiveGamesLoading(false);
     }
   }, [user?.userId, user?.username, arenaId]);
 
@@ -144,13 +144,13 @@ const applyTriviaSignalRPayload = useCallback(
       statusNorm === TRIVIA_GAME_STATUS_FINISHED.toLowerCase() || statusNorm === 'finished';
 
     if (isFinished) {
-      setActiveTriviaGames((prev) => prev.filter((g) => g.gameId !== game.gameId));
-      setActiveTriviaGamesError(null);
+      setActiveGames((prev) => prev.filter((g) => g.gameId !== game.gameId));
+      setActiveGamesError(null);
       return;
     }
 
     if (isNew) {
-      const newGame: ActiveTriviaGame = {
+      const newGame: ActiveGame = {
         gameId: game.gameId,
         userId: game.userId,
         userName: game.userName,
@@ -159,21 +159,21 @@ const applyTriviaSignalRPayload = useCallback(
         topicName: game.topicName,
         status: game.status,
       }
-      setActiveTriviaGames((prev) => {
+      setActiveGames((prev) => {
         const without = prev.filter((g) => g.gameId !== game.gameId);
         return [...without, newGame];
       });
-      setActiveTriviaGamesError(null);
+      setActiveGamesError(null);
       return;
     }
-    setActiveTriviaGamesError(null);
+    setActiveGamesError(null);
   },
-  [loadActiveTriviaGames]
+  [loadActiveGames]
 );
 
   useGameRealtime(arenaId > 0 ? arenaId : undefined, {
     onPayload: applyTriviaSignalRPayload,
-    refetch: loadActiveTriviaGames,
+    refetch: loadActiveGames,
   });
   
   useEffect(() => {
@@ -199,11 +199,11 @@ const applyTriviaSignalRPayload = useCallback(
 
   useFocusEffect(
     useCallback(() => {
-      loadActiveTriviaGames();
+      loadActiveGames();
       loadTopics();
       getFavouriteTopicIds().then(setFavouriteTopicIds);
       void loadArenaDetail();
-    }, [loadActiveTriviaGames, loadTopics, loadArenaDetail])
+    }, [loadActiveGames, loadTopics, loadArenaDetail])
   );
 
   const handleToggleFavouriteTopic = useCallback(async (id: number) => {
@@ -213,12 +213,12 @@ const applyTriviaSignalRPayload = useCallback(
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadActiveTriviaGames(), loadTopics(), loadArenaDetail()]);
+    await Promise.all([loadActiveGames(), loadTopics(), loadArenaDetail()]);
     setRefreshing(false);
-  }, [loadActiveTriviaGames, loadTopics, loadArenaDetail]);
+  }, [loadActiveGames, loadTopics, loadArenaDetail]);
 
-  const filteredActiveTriviaGames = useMemo(() => {
-    let result = activeTriviaGames.filter(e => isTriviaGameNotFinished(e));
+  const filteredActiveGames = useMemo(() => {
+    let result = ActiveGames.filter(e => isTriviaGameNotFinished(e));
     if (!isLoggedIn) {
       result = result.filter((e) => (e.wagerAmount ?? 0) === 0);
     }
@@ -232,7 +232,7 @@ const applyTriviaSignalRPayload = useCallback(
       result = result.filter((e) => (e.wagerAmount ?? 0) === wagerAmount);
     }
     return result;
-  }, [activeTriviaGames, selectedTopicId, wagerAmount, isLoggedIn, apiTopics, showWagerControls, showTopicFilter]);
+  }, [ActiveGames, selectedTopicId, wagerAmount, isLoggedIn, apiTopics, showWagerControls, showTopicFilter]);
 
   const topicOptions: TopicOption[] = useMemo(() => {
     const all: TopicOption = { id: ALL_TOPICS, name: 'Any topics' };
@@ -305,14 +305,14 @@ const applyTriviaSignalRPayload = useCallback(
     const uid = user?.userId;
     if (uid == null) return 0;
     const ids = new Set<number>();
-    for (const entry of activeTriviaGames) {
+    for (const entry of ActiveGames) {
       if (entry.userId === uid) ids.add(entry.gameId);
     }
     return ids.size;
-  }, [arenaId, user?.userId, activeTriviaGames]);
+  }, [arenaId, user?.userId, ActiveGames]);
 
   const handleChallenge = useCallback(
-    (entry: ActiveTriviaGame) => {
+    (entry: ActiveGame) => {
       if(isLoggedIn && user?.userId != null && Number(entry.userId) === Number(user.userId)) {
        return;
       }
@@ -819,31 +819,31 @@ const applyTriviaSignalRPayload = useCallback(
       </TouchableOpacity>
     </View>
 
-    {filteredActiveTriviaGames.length === 0 ? (
+    {filteredActiveGames.length === 0 ? (
       <View style={styles.emptyStateContainer}>
-        {activeTriviaGamesError ? (
+        {ActiveGamesError ? (
           <Text style={[globalStyles.emptyState, styles.historyErrorText]}>
-            {activeTriviaGamesError}
+            {ActiveGamesError}
           </Text>
         ) : null}
-        {!activeTriviaGamesError && activeTriviaGamesLoading ? (
+        {!ActiveGamesError && ActiveGamesLoading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
         ) : null}
-        {!activeTriviaGamesError && !activeTriviaGamesLoading ? (
+        {!ActiveGamesError && !ActiveGamesLoading ? (
           <Text style={globalStyles.emptyState}>
             {!isLoggedIn
               ? 'Log in to see quiz history from your account.'
               : gameTypeId !== GAME_TYPE_TRIVIA
               ? 'No active games yet. Start a battle to see it here.'
-              : activeTriviaGames.length === 0
+              : ActiveGames.length === 0
               ? 'No quiz results yet. Finish a quiz while logged in to see it here.'
               : 'No quizzes match the selected filters. Try different topic or wager.'}
           </Text>
         ) : null}
-        {activeTriviaGamesError ? (
+        {ActiveGamesError ? (
           <TouchableOpacity
             style={globalStyles.secondaryButton}
-            onPress={() => void loadActiveTriviaGames()}
+            onPress={() => void loadActiveGames()}
             activeOpacity={0.8}
           >
             <Text style={globalStyles.secondaryButtonText}>Retry</Text>
@@ -851,7 +851,7 @@ const applyTriviaSignalRPayload = useCallback(
         ) : null}
       </View>
     ) : (
-      filteredActiveTriviaGames.map((entry) => {
+      filteredActiveGames.map((entry) => {
         const isOwnGame =
           isLoggedIn &&
           user?.userId != null &&

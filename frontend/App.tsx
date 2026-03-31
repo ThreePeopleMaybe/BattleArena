@@ -14,6 +14,7 @@ import ArenaLeaderboardScreen from './src/screens/arena/ArenaLeaderboardScreen';
 import ArenaLobbyScreen from './src/screens/arena/ArenaLobbyScreen';
 import JoinArenaScreen from './src/screens/arena/JoinArenaScreen';
 import ChallengeScreen from './src/screens/core/ChallengeScreen';
+import GameResultsScreen from './src/screens/core/GameResultScreen';
 import HomeScreen from './src/screens/core/HomeScreen';
 import LoginScreen from './src/screens/core/LoginScreen';
 import ProfileScreen from './src/screens/core/ProfileScreen';
@@ -101,6 +102,7 @@ export default function App() {
                 ...homeScreenHeader(navigation),
               })}
             />
+            <Stack.Screen name="GameResults" component={GameResultsScreen} options={{ title: 'My results' }} />
             <Stack.Screen name="Archery" component={ArcheryGameScreen} options={{ title: 'Archery' }} />
             <Stack.Screen name="Sudoku" component={SudokuGameScreen} options={{ title: 'Sudoku' }} />
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Log in', ...noBackButton }} />

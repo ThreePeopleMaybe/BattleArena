@@ -28,7 +28,7 @@ export interface QuizResult {
     choiceId: number;
 }
 
-export interface ActiveTriviaGame {
+export interface ActiveGame {
     gameId: number;
     userId: number;
     userName: string;
@@ -78,4 +78,18 @@ export type ArenaMemberPayload = {
   userId: number;
   userName: string;
   action: string;
+};
+
+export type UserGameResult = {
+    id: number;
+    gameId: number;
+    numberOfCorrectAnswers: number;
+    timeTakenInSeconds: number;
+    opponentNumberOfCorrectAnswers: number;
+    opponentTimeTakenInSeconds: number;
+    isWinner: boolean | null;
+    status: string;
+    topicName?: string | null;
+    createdAt?: string | null;
+    opponentUserName?: string | null;
 };

@@ -1,10 +1,11 @@
 using BattleArena.Application.Common;
 using BattleArena.Application.Common.Interfaces;
 using BattleArena.Db;
+using BattleArena.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace BattleArena.Application.TriviaGames.Commands;
+namespace BattleArena.Application.Games.Commands;
 
 public sealed record InsertGameResultCommand(
     long GameId,
@@ -13,10 +14,10 @@ public sealed record InsertGameResultCommand(
     int TimeTakenInSeconds,
     IReadOnlyList<Dto.TriviaGameResultDetailDto> Details) : IRequest<long>;
 
-public sealed class InsertTriviaGameResultCommandHandler(
+public sealed class InsertGameResultCommandHandler(
     IGameCommandRepository gameCommandRepository,
+    IGameQueryRepository gameQueryRepository,
     ITriviaGameCommandRepository triviaGameCommandRepository,
-    ITriviaGameQueryRepository triviaGameQueryRepository,
     IRealtimeNotifier realtimeNotifier,
     BattleArenaDbContext dbContext)
     : IRequestHandler<InsertGameResultCommand, long>
@@ -24,7 +25,7 @@ public sealed class InsertTriviaGameResultCommandHandler(
     public async Task<long> Handle(InsertGameResultCommand request, CancellationToken cancellationToken)
     {
         var triviaGameResults =
-            await triviaGameQueryRepository.GetTriviaGameResultAsync(request.GameId, cancellationToken) ?? [];
+            await gameQueryRepository.GetGameResultAsync(request.GameId, cancellationToken) ?? [];
         var hasExistingResults = triviaGameResults.Count > 0;
 
         bool? isWinner = null;
@@ -61,6 +62,7 @@ public sealed class InsertTriviaGameResultCommandHandler(
                 if (hasExistingResults)
                 {
                     await gameCommandRepository.UpdateGameResultWinnerAsync(triviaGameResults, ct);
+                    await gameCommandRepository.UpdateGameStatusAsync(request.GameId, GameStatus.Finished, ct);
                 }
 
                 var id = await gameCommandRepository.InsertGameResultAsync(
@@ -101,7 +103,7 @@ public sealed class InsertTriviaGameResultCommandHandler(
             var data = await (from game in dbContext.Games.AsNoTracking()
                     where game.Id == request.GameId
                     join user in dbContext.Users.AsNoTracking() on game.StartedBy equals user.Id
-                    select new { game.ArenaId, UserName = user.Username, game.Wager, game.QuestionTopicId })
+                    select new { game.ArenaId, UserName = user.UserName, game.Wager, game.QuestionTopicId })
                 .FirstOrDefaultAsync(cancellationToken);
 
             string topicName = null;

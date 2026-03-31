@@ -3,17 +3,16 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GAME_TYPE_TRIVIA } from '../../../src/constants/gameTypes';
-import { finishGame } from '../../api/game';
+import { GameResultDetail, insertGameResult, setGameInProgress } from '../../api/game';
 import {
   createTriviaGame,
-  getTriviaGameQuestionsByGameId,
-  insertTriviaGameResult,
+  getTriviaGameQuestionsByGameId
 } from '../../api/triviaGame';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../navigation/types';
 import { globalStyles } from '../../styles/globalStyles';
 import { theme } from '../../theme';
-import { Question, QuizQuestionResult, QuizResult } from '../../types';
+import { Question, QuizQuestionResult } from '../../types';
 
 const QUIZ_TIME_LIMIT_MS = 100 * 1000; // 100 seconds
 const BATTLE_INTRO_COUNTDOWN_SEC = 5;
@@ -38,19 +37,16 @@ function countCorrectAnswers(results: QuizQuestionResult[]): number {
 
 function buildTriviaResultDetails(
   results: QuizQuestionResult[],
-  triviaGameQuestionIdsByQuestionId: Record<string, number>
-): QuizResult[] {
-  const details: QuizResult[] = [];
+): GameResultDetail[] {
+  const details: GameResultDetail[] = [];
   for (const r of results) {
-    const triviaQId = triviaGameQuestionIdsByQuestionId[String(r.question.id)];
-    if (triviaQId == null) continue;
     if (r.selectedIndex < 0) continue;
 
     const choice = r.question.choices[r.selectedIndex];
     if (!choice) continue;
     const answerId = choice.id;
     if (!Number.isFinite(answerId)) continue;
-    details.push({ questionId: triviaQId, choiceId: answerId });
+    details.push({ questionId: r.question.id, choiceId: answerId });
   }
   return details;
 }
@@ -74,24 +70,23 @@ export default function QuizScreen({ navigation, route }: Props) {
 
   const persistQuizResult = useCallback(
     (finalResults: QuizQuestionResult[], timeMs: number) => {
-      const gameId = gameIdRef.current;
-      const map = triviaMapRef.current;
+      const gid = gameIdRef.current ?? 0;
       const userId = user?.userId;
       if (gameId == null || userId == null) return;
 
       const numberOfCorrectAnswers = countCorrectAnswers(finalResults);
       const timeTakenInSeconds = Math.max(0, Math.round(timeMs / 1000));
-      const details = buildTriviaResultDetails(finalResults, map);
+      const details = buildTriviaResultDetails(finalResults);
 
-      void insertTriviaGameResult({
-        gameId,
+      void insertGameResult({
+        gameId: gid,
         userId,
         numberOfCorrectAnswers,
         timeTakenInSeconds,
         details,
       }).catch(() => {});
     },
-    [user?.userId, topicId]
+    [user?.userId]
   );
 
   const [introCountdown, setIntroCountdown] = useState(() =>
@@ -107,7 +102,6 @@ export default function QuizScreen({ navigation, route }: Props) {
     setLoadError(null);
     setQuestions(null);
     gameIdRef.current = null;
-    triviaMapRef.current = {};
     setQuizStartMs(null);
 
     void (async () => {
@@ -137,7 +131,7 @@ export default function QuizScreen({ navigation, route }: Props) {
             return;
           }
 
-          await finishGame(gameId);
+          await setGameInProgress(gameId);
           if (cancelled) return;
           gameIdRef.current = gameId;
           triviaMapRef.current = {};

@@ -29,7 +29,7 @@ public static class UserApi
 
         if (user is null) return Results.NotFound();
 
-        return Results.Ok(new UserDto(user.Id, user.Username, user.FirstName, user.LastName, user.Email, user.PhoneNumber, user.Amount));
+        return Results.Ok(new UserDto(user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.PhoneNumber, user.Amount));
     }
 
     static async Task<IResult> SignUpUser(SignUpUserRequest request, ISender sender, CancellationToken cancellationToken)

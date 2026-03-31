@@ -1,0 +1,38 @@
+import { battleArenaClient } from './battleArenaClient';
+
+export type SudokuGamePayload = {
+    gameId: number;
+    puzzleIndex: number;
+    initialGrid: number[][];
+};
+
+export async function getSudokuGame(gameId: number): Promise<SudokuGamePayload> {
+    const { data } = await battleArenaClient.get<SudokuGamePayload>(`/api/v1/sudoku-games/${gameId}`);
+    return {
+        gameId: Number(data.gameId),
+        puzzleIndex: Number(data.puzzleIndex),
+        initialGrid: Array.isArray(data.initialGrid)
+            ? data.initialGrid.map((row) => (Array.isArray(row) ? row.map((n) => Number(n)) : []))
+            : [],
+    };
+}
+
+export async function createSudokuGame(params: {
+    gameTypeId: number;
+    wagerAmount: number;
+    startedBy: number;
+    arenaId?: number;
+    puzzleIndex: number;
+    initialGrid: number[][];
+}): Promise<number> {
+    const { data } = await battleArenaClient.post<{ gameId: number }>('/api/v1/sudoku-games/create', {
+        gameTypeId: params.gameTypeId,
+        wagerAmount: params.wagerAmount,
+        startedBy: params.startedBy,
+        arenaId: params.arenaId,
+        puzzleIndex: params.puzzleIndex,
+        initialGrid: params.initialGrid,
+    });
+
+    return Number(data.gameId);
+}

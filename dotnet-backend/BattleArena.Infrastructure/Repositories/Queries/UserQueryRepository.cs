@@ -14,7 +14,7 @@ public class UserQueryRepository(BattleArenaDbContext dbContext) : IUserQueryRep
                              where ap.GameTypeId == gameTypeId && ap.IsActive && !ap.IsPlaying
                              select new Player(
                                  u.Id,
-                                 u.Username,
+                                 u.UserName,
                                  dbContext.WinsLosses
                                      .Where(w => w.UserId == u.Id && w.GameTypeId == gameTypeId)
                                      .Select(w => (int?)w.Wins)
@@ -48,7 +48,7 @@ public class UserQueryRepository(BattleArenaDbContext dbContext) : IUserQueryRep
                             select new
                             {
                                 u.Id,
-                                u.Username,
+                                u.UserName,
                                 Wins = dbContext.WinsLosses
                                     .Where(w => w.UserId == u.Id && w.GameTypeId == gameTypeId)
                                     .Select(w => (int?)w.Wins)
@@ -64,7 +64,7 @@ public class UserQueryRepository(BattleArenaDbContext dbContext) : IUserQueryRep
                             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return player is null ? null : new Player(player.Id, player.Username, player.Wins, player.Losses, player.Wins - player.Losses, player.Wager);
+        return player is null ? null : new Player(player.Id, player.UserName, player.Wins, player.Losses, player.Wins - player.Losses, player.Wager);
     }
 
     public async Task<IReadOnlyList<Player>> GetFavoritePlayersAsync(long userId, int gameTypeId, CancellationToken cancellationToken = default)
@@ -74,7 +74,7 @@ public class UserQueryRepository(BattleArenaDbContext dbContext) : IUserQueryRep
                              where fp.UserId == userId && fp.GameTypeId == gameTypeId
                              select new Player(
                                  u.Id,
-                                 u.Username,
+                                 u.UserName,
                                  dbContext.WinsLosses
                                      .Where(w => w.UserId == u.Id && w.GameTypeId == gameTypeId)
                                      .Select(w => (int?)w.Wins)
@@ -93,14 +93,14 @@ public class UserQueryRepository(BattleArenaDbContext dbContext) : IUserQueryRep
         return players;
     }
 
-    public async Task<Player?> GetPlayerByUserNameAsync(string userName, int gameTypeId, CancellationToken cancellationToken = default)
+    public async Task<Player?> GetPlayerByUserNameAsync(string UserName, int gameTypeId, CancellationToken cancellationToken = default)
     {
         var player = await dbContext.Users.AsNoTracking()
-            .Where(u => u.Username == userName)
+            .Where(u => u.UserName == UserName)
             .Select(u => new
             {
                 u.Id,
-                u.Username,
+                u.UserName,
                 Wins = dbContext.WinsLosses
                     .Where(w => w.UserId == u.Id && w.GameTypeId == gameTypeId)
                     .Select(w => (int?)w.Wins)
@@ -116,7 +116,7 @@ public class UserQueryRepository(BattleArenaDbContext dbContext) : IUserQueryRep
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return player is null ? null : new Player(player.Id, player.Username, player.Wins, player.Losses, player.Wins - player.Losses, player.Wager);
+        return player is null ? null : new Player(player.Id, player.UserName, player.Wins, player.Losses, player.Wins - player.Losses, player.Wager);
     }
 
     public async Task<User?> GetUserByIdAsync(long id, CancellationToken cancellationToken = default)
@@ -126,7 +126,7 @@ public class UserQueryRepository(BattleArenaDbContext dbContext) : IUserQueryRep
             .Select(u => new User
             {
                 Id = u.Id,
-                Username = u.Username,
+                UserName = u.UserName,
                 FirstName = u.FirstName,
                 LastName = u.LastName,
                 Email = u.Email,

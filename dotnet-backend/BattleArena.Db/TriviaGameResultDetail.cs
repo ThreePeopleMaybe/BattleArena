@@ -18,6 +18,6 @@ public class TriviaGameResultDetail : AuditBase
     [Column("question_id")]
     public int QuestionId { get; set; }
 
-    [Column("Choice_id")]
+    [Column("choice_id")]
     public int ChoiceId { get; set; }
 }

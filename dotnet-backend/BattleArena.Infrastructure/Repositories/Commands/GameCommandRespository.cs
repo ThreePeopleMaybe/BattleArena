@@ -31,7 +31,7 @@ public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameComman
         return entity.Id;
     }
 
-    public async Task<(bool Success, int? ArenaId)> FinishGameAsync(long gameId, CancellationToken cancellationToken = default)
+    public async Task<(bool Success, int? ArenaId)> UpdateGameStatusAsync(long gameId, GameStatus status, CancellationToken cancellationToken = default)
     {
         var entity = await dbContext.Games.FindAsync([gameId], cancellationToken);
         if (entity is null)
@@ -39,7 +39,7 @@ public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameComman
             return (false, null);
         }
 
-        entity.Status = GameStatus.Finished;
+        entity.Status = status;
         entity.EndedAt = DateTimeOffset.UtcNow;
         entity.UpdatedBy = "system";
         entity.UpdatedAt = DateTimeOffset.UtcNow;
@@ -64,7 +64,7 @@ public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameComman
             UpdatedAt = now
         };
 
-        dbContext.TriviaGameResults.Add(entity);
+        dbContext.GameResults.Add(entity);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return entity.Id;
@@ -84,7 +84,7 @@ public class GameCommandRepository(BattleArenaDbContext dbContext) : IGameComman
             triviaGameResult.UpdatedAt = now;
         }
 
-        dbContext.TriviaGameResults.UpdateRange(triviaGameResults);
+        dbContext.GameResults.UpdateRange(triviaGameResults);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

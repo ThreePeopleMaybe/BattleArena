@@ -64,6 +64,15 @@ export default function HomeScreen({ navigation, route }: Props) {
         <Text style={styles.cardTitle}>Tournament</Text>
         <Text style={styles.cardDesc}>Create or join tournaments. View your tournaments and host multiplayer sessions.</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.card, styles.resultsCard]}
+        onPress={() => navigation.navigate('GameResults', { gameTypeId })}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.cardIcon}>📋</Text>
+        <Text style={styles.cardTitle}>My results</Text>
+        <Text style={styles.cardDesc}>See scores and times from games you finished while logged in.</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -97,6 +106,9 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
     borderWidth: 2,
+  },
+  resultsCard: {
+    borderColor: theme.colors.primary,
   },
   soloCard: {
     borderColor: theme.colors.primary,

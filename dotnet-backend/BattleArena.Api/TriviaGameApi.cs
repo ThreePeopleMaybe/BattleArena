@@ -14,9 +14,6 @@ public static class TriviaGameApi
         group.MapPost("create", CreateTriviaGame)
             .Produces<CreateTriviaGameResult>(StatusCodes.Status201Created);
 
-        group.MapGet("active/{gameTypeId:int}/{arenaId:int}", GetActiveTriviaGame)
-            .Produces<List<ActiveTriviaGameData>>();
-
         group.MapGet("{gameId:long}", GetTriviaGameById)
             .Produces<IReadOnlyList<QuestionDto>>()
             .Produces(StatusCodes.Status404NotFound);
@@ -33,11 +30,6 @@ public static class TriviaGameApi
         return Results.Created($"/api/v1/trivia-games/{result.GameId}", result);
     }
 
-    static async Task<IResult> GetActiveTriviaGame(int gameTypeId, int arenaId, ISender sender, CancellationToken cancellationToken)
-    {
-        var games = await sender.Send(new GetActiveTriviaGameQuery(gameTypeId, arenaId), cancellationToken);
-        return Results.Ok(games);
-    }
     static async Task<IResult> GetTriviaGameById(long gameId, ISender sender, CancellationToken cancellationToken)
     {
         var triviaGame = await sender.Send(new GetTriviaGameQuestionsByGameIdQuery(gameId), cancellationToken);

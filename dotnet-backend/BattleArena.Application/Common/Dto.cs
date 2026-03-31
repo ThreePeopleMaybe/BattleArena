@@ -34,7 +34,7 @@ public class Dto
 
     public sealed record QuestionTopicDto(int Id, string Name, int QuestionTopicCategoryId, string? Description);
 
-    public sealed record ActiveTriviaGameData(long GameId, long UserId, string UserName, int WagerAmount, int TopicId, string TopicName, int ArenaId, string Status);
+    public sealed record ActiveGameData(long GameId, long UserId, string UserName, int WagerAmount, int TopicId, string TopicName, int ArenaId, string Status);
 
     public sealed record ArenaLeaderboardEntryDto(string UserName, int Wins, int Losses, int GamesPlayed, int TotalCorrectAnswers, int TotalTimeTakenInSeconds);
 
@@ -42,4 +42,34 @@ public class Dto
 
     public sealed record PlayerDto(long Id, string Username, int Wins, int Losses, int WagerAmount);
     public sealed record TriviaGameResultDetailDto(int QuestionId, int ChoiceId);
+    public sealed record SudokuGameDto(long GameId, int PuzzleIndex, int[][] InitialGrid);
+    public class UserGameResultDto(
+        long id,
+        long gameId,
+        long startedBy,
+        long userId,
+        int numberOfCorrectAnswers,
+        int timeTakenInSeconds,
+        int opponentNumberOfCorrectAnswers,
+        int opponentTimeTakenInSeconds,
+        string status,
+        bool? isWinner,
+        string? topicName,
+        DateTimeOffset? createdAt,
+        string? opponentUserName)
+    {
+        public long Id { get; set; } = id;
+        public long GameId { get; set; } = gameId;
+        public long StartedBy { get; set; } = startedBy;
+        public long UserId { get; set; } = userId;
+        public int NumberOfCorrectAnswers { get; set; } = numberOfCorrectAnswers;
+        public int TimeTakenInSeconds { get; set; } = timeTakenInSeconds;
+        public int OpponentNumberOfCorrectAnswers { get; set; } = opponentNumberOfCorrectAnswers;
+        public int OpponentTimeTakenInSeconds { get; set; } = opponentTimeTakenInSeconds;
+        public bool? IsWinner { get; set; } = isWinner;
+        public string Status { get; set; } = status;
+        public string? TopicName { get; set; } = topicName;
+        public DateTimeOffset? CreatedAt { get; set; } = createdAt;
+        public string? OpponentUserName { get; set; } = opponentUserName;
+    }
 }

@@ -23,7 +23,7 @@ public sealed class JoinArenaCommandHandler(
         var id = await arenaCommandRepository.InsertArenaPlayerAsync(arena.Id, request.UserId, cancellationToken);
         var user = dbContext.Users.FirstOrDefault(u => u.Id == request.UserId);
 
-        await realtimeNotifier.NotifyJoinArenaAsync(arena.Id, request.UserId, user.Username, cancellationToken);
+        await realtimeNotifier.NotifyJoinArenaAsync(arena.Id, request.UserId, user.UserName, cancellationToken);
 
         return id;
     }
