@@ -7,7 +7,7 @@ namespace BattleArena.Application.Games.Queries;
 
 public sealed record GetActiveGameQuery(int GameTypeId, int ArenaId) : IRequest<IReadOnlyList<ActiveGameData>>;
 
-public sealed class GetActiveTriviaGameQueryHandler(IGameQueryRepository gameQueryRepository, IMapper mapper)
+public sealed class GetActiveGameQueryHandler(IGameQueryRepository gameQueryRepository, IMapper mapper)
     : IRequestHandler<GetActiveGameQuery, IReadOnlyList<ActiveGameData>>
 {
     public async Task<IReadOnlyList<ActiveGameData>> Handle(GetActiveGameQuery request, CancellationToken cancellationToken)
