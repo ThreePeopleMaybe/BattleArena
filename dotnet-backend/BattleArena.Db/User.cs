@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BattleArena.Db;
 
-[Index(nameof(Username), IsUnique = true)]
+[Index(nameof(UserName), IsUnique = true)]
 [Index(nameof(Email), IsUnique = true)]
 [Table("users")]
 public class User : AuditBase
@@ -12,7 +12,7 @@ public class User : AuditBase
     public long Id { get; set; }
 
     [Column("username", TypeName = "varchar(255)")]
-    public required string Username { get; set; }
+    public required string UserName { get; set; }
 
     [Column("first_name", TypeName = "varchar(255)")]
     public required string FirstName { get; set; }

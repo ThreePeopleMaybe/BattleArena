@@ -5,9 +5,5 @@ namespace BattleArena.Application.Common.Interfaces;
 
 public interface ITriviaGameQueryRepository
 {
-    Task<IReadOnlyList<ActiveTriviaGameData>> GetActiveGamesAsync(int gameTypeId, int arenaId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<GameResult>?> GetTriviaGameResultAsync(long gameId, CancellationToken cancellationToken = default);
-
     Task<IReadOnlyList<Question>> GetTriviaGameQuestionsByGameIdAsync(long gameId, CancellationToken cancellationToken = default);
 }

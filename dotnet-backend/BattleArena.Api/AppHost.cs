@@ -2,9 +2,7 @@ using System.Text.Json;
 using BattleArena.Api;
 using BattleArena.Api.Realtime;
 using BattleArena.Application.Common.Interfaces;
-using BattleArena.Application.Common.Mapping;
 using BattleArena.Application.Users.Queries;
-using MediatR;
 using BattleArena.Db;
 using BattleArena.Infrastructure;
 
@@ -53,6 +51,7 @@ app.MapUserApi();
 app.MapPlayerApi();
 app.MapTriviaGameApi();
 app.MapArenaApi();
+app.MapSudokuGameApi();
 app.MapGameApi();
 app.MapQuestionApi();
 app.MapQuestionTopicApi();

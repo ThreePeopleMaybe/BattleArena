@@ -9,7 +9,7 @@ public class UserCommandRepository(BattleArenaDbContext dbContext) : IUserComman
     public async Task<User?> SignUpUserAsync(string username, string firstName, string lastName, string? email, string? phoneNumber, int? amount, CancellationToken cancellationToken = default)
     {
         var usernameExists = await dbContext.Users
-            .AnyAsync(u => u.Username == username, cancellationToken);
+            .AnyAsync(u => u.UserName == username, cancellationToken);
 
         if (usernameExists)
         {
@@ -30,7 +30,7 @@ public class UserCommandRepository(BattleArenaDbContext dbContext) : IUserComman
         var now = DateTimeOffset.UtcNow;
         var user = new User
         {
-            Username = username,
+            UserName = username,
             FirstName = firstName,
             LastName = lastName,
             Email = email,

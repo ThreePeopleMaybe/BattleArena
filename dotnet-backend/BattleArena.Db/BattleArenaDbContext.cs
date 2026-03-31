@@ -19,7 +19,8 @@ public class BattleArenaDbContext(DbContextOptions<BattleArenaDbContext> options
     public DbSet<Wager> Wagers { get; set; }
     public DbSet<TriviaGameQuestion> TriviaGameQuestions { get; set; }
     public DbSet<TriviaGameChoice> TriviaGameChoices { get; set; }
-    public DbSet<GameResult> TriviaGameResults { get; set; }
+    public DbSet<GameResult> GameResults { get; set; }
+    public DbSet<SudokuGame> SudokuGames { get; set; }
     public DbSet<TriviaGameResultDetail> TriviaGameResultDetails { get; set; }
     public DbSet<GameType> GameTypes { get; set; }
 
@@ -52,5 +53,9 @@ public class BattleArenaDbContext(DbContextOptions<BattleArenaDbContext> options
         modelBuilder.Entity<Question>()
             .Property(e => e.AnswerType)
             .HasConversion(x => x.ToString(), v => Enum.Parse<QuestionAnswerType>(v));
+
+        modelBuilder.Entity<SudokuGame>()
+            .HasIndex(s => s.GameId)
+            .IsUnique();
     }
 }

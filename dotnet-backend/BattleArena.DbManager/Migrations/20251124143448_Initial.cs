@@ -97,7 +97,7 @@ namespace BattleArena.DbManager.Migrations
                     updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
                     updated_by = table.Column<string>(type: "varchar(255)", nullable: false)
                 },
-                constraints: table => { table.PrimaryKey("PK_trivia_game_results", x => x.id); });
+                constraints: table => { table.PrimaryKey("PK_game_results", x => x.id); });
 
             migrationBuilder.CreateTable(
                 name: "trivia_game_result_details",
@@ -584,6 +584,31 @@ namespace BattleArena.DbManager.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "sudoku_games",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    game_id = table.Column<long>(type: "bigint", nullable: false),
+                    puzzle_index = table.Column<int>(type: "integer", nullable: false),
+                    initial_grid_json = table.Column<string>(type: "jsonb", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    created_by = table.Column<string>(type: "varchar(255)", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "time with time zone", nullable: true),
+                    updated_by = table.Column<string>(type: "varchar(255)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_sudoku_games", x => x.id);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_sudoku_games_game_id",
+                table: "sudoku_games",
+                column: "game_id",
+                unique: true);
+
             migrationBuilder.CreateIndex(
                 name: "IX_game_rounds_game_id",
                 table: "game_rounds",
@@ -710,7 +735,7 @@ namespace BattleArena.DbManager.Migrations
             migrationBuilder.DropTable(name: "trivia_game_choices");
             migrationBuilder.DropTable(name: "trivia_game_questions");
             migrationBuilder.DropTable(name: "trivia_game_result_details");
-            migrationBuilder.DropTable(name: "trivia_game_results");
+            migrationBuilder.DropTable(name: "game_results");
             migrationBuilder.DropTable(name: "game_round_answers");
             migrationBuilder.DropTable(name: "game_round_answer_votes");
             migrationBuilder.DropTable(name: "active_players");

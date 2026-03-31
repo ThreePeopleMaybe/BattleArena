@@ -18,6 +18,9 @@ public static class DependencyInjection
         services.AddScoped<IArenaCommandRepository, ArenaCommandRepository>();
         services.AddScoped<IArenaQueryRepository, ArenaQueryRepository>();
         services.AddScoped<IGameCommandRepository, GameCommandRepository>();
+        services.AddScoped<IGameQueryRepository, GameQueryRepository>();
+        services.AddScoped<ISudokuGameCommandRepository, SudokuGameCommandRepository>();
+        services.AddScoped<ISudokuGameQueryRepository, SudokuGameQueryRepository>();
         services.AddScoped<ITriviaGameCommandRepository, TriviaGameCommandRepository>();
         services.AddScoped<ITriviaGameQueryRepository, TriviaGameQueryRepository>();
         services.AddScoped<IQuestionTopicQueryRepository, QuestionTopicQueryRepository>();

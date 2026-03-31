@@ -8,27 +8,6 @@ namespace BattleArena.Infrastructure.Repositories.Queries;
 
 public class TriviaGameQueryRepository(BattleArenaDbContext dbContext) : ITriviaGameQueryRepository
 {
-    public async Task<IReadOnlyList<ActiveTriviaGameData>> GetActiveGamesAsync(int gameTypeId, int arenaId, CancellationToken cancellationToken = default)
-    {
-        return await (
-            from game in dbContext.Games.AsNoTracking()
-            where game.GameTypeId == gameTypeId
-                  && ((game.Status != GameStatus.Finished && arenaId == 0 && game.ArenaId == 0)
-                        || game.ArenaId == arenaId)
-            join topic in dbContext.QuestionTopics.AsNoTracking() on game.QuestionTopicId equals topic.Id
-            join user in dbContext.Users.AsNoTracking() on game.StartedBy equals user.Id
-            select new ActiveTriviaGameData(game.Id, game.StartedBy, user.Username, game.Wager, topic.Id, topic.Name, game.ArenaId.GetValueOrDefault(), game.Status.ToString())
-        ).ToListAsync(cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<GameResult>> GetTriviaGameResultAsync(long gameId, CancellationToken cancellationToken = default)
-    {
-        return await dbContext.TriviaGameResults
-            .AsNoTracking()
-            .Where(t => t.GameId == gameId)
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task<IReadOnlyList<Question>> GetTriviaGameQuestionsByGameIdAsync(long gameId, CancellationToken cancellationToken = default)
     {
         var questions = await (

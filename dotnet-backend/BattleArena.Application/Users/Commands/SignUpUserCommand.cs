@@ -38,7 +38,7 @@ public sealed class SignUpUserCommandHandler(IUserCommandRepository userCommandR
             ? throw new InvalidOperationException("Failed to sign up user. Username or email may already exist.")
             : new SignUpUserResult(
                 user.Id,
-                user.Username,
+                user.UserName,
                 user.FirstName,
                 user.LastName,
                 user.Email,

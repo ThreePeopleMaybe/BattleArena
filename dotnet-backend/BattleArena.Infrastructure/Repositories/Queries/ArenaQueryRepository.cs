@@ -34,7 +34,7 @@ public class ArenaQueryRepository(BattleArenaDbContext dbContext) : IArenaQueryR
             where ap.ArenaId == arenaId
                && ap.Status != ArenaPlayerStatus.Deleted
                && ap.UserId == u.Id
-            select new ArenaPlayerDto(ap.UserId, u.Username))
+            select new ArenaPlayerDto(ap.UserId, u.UserName))
             .ToListAsync(cancellationToken);
     }
 
@@ -43,11 +43,11 @@ public class ArenaQueryRepository(BattleArenaDbContext dbContext) : IArenaQueryR
         var rows = await (
             from g in dbContext.Games.AsNoTracking()
             where g.ArenaId == arenaId && g.Status == GameStatus.Finished
-            join r in dbContext.TriviaGameResults.AsNoTracking() on g.Id equals r.GameId
+            join r in dbContext.GameResults.AsNoTracking() on g.Id equals r.GameId
             join u in dbContext.Users.AsNoTracking() on r.UserId equals u.Id
             select new
             {
-                u.Username,
+                u.UserName,
                 r.NumberOfCorrectAnswers,
                 r.TimeTakenInSeconds,
                 r.IsWinner,
@@ -57,7 +57,7 @@ public class ArenaQueryRepository(BattleArenaDbContext dbContext) : IArenaQueryR
             return [];
 
         var leaderboard = rows
-            .GroupBy(x => x.Username)
+            .GroupBy(x => x.UserName)
             .Select(g =>
             {
                 var wins = g.Count(x => x.IsWinner.GetValueOrDefault());
